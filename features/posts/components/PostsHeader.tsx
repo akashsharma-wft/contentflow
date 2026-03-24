@@ -43,7 +43,7 @@ export function PostsHeader() {
 
         {/* Opens Sanity Studio to create a new post */}
         <a
-          href="http://localhost:3333/studio/desk/post"
+          href={`${process.env.NEXT_PUBLIC_SANITY_STUDIO_URL}/studio/desk/post`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
