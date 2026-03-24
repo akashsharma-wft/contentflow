@@ -240,7 +240,7 @@ export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
       {/* Edit in Sanity Studio link */}
       <div className="flex justify-start pt-4">
         <a
-          href={`http://localhost:3333/studio/desk/post;${post._id}`}
+          href={`${process.env.NEXT_PUBLIC_SANITY_STUDIO_URL}/studio/desk/post;${post._id}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 text-white/20 hover:text-indigo-400 text-[11px] font-mono uppercase tracking-widest transition-colors cursor-pointer"

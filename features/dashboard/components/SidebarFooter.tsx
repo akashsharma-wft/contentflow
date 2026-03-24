@@ -59,7 +59,7 @@ export function SidebarFooter() {
 
       {/* Sanity Studio — opens in new tab */}
       <a
-        href="http://localhost:3333/studio"
+        href={`${process.env.NEXT_PUBLIC_SANITY_STUDIO_URL}/studio`}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-white/30 hover:text-white/60 hover:bg-white/5 transition-all cursor-pointer"

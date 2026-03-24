@@ -137,7 +137,7 @@ export function PostsTable({ posts }: PostsTableProps) {
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <a
-                  href={`http://localhost:3333/studio/desk/post;${post._id}`}
+                  href={`${process.env.NEXT_PUBLIC_SANITY_STUDIO_URL}/desk/post;${post._id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 cursor-pointer hover:text-white text-sm px-3 py-2"
