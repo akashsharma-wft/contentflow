@@ -5,30 +5,30 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   FileText,
-  Image,
-  GitBranch,
-  KeyRound,
+  BarChart2,
   Settings,
+  CreditCard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// Each nav item — add more here as needed, component handles rendering
 const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard',          icon: LayoutDashboard },
-  { label: 'Content',   href: '/dashboard/posts',    icon: FileText },
-  { label: 'Media',     href: '/dashboard/media',    icon: Image },
-  { label: 'Schema',    href: '/dashboard/schema',   icon: GitBranch },
-  { label: 'API Keys',  href: '/dashboard/api-keys', icon: KeyRound },
-  { label: 'Settings',  href: '/dashboard/settings', icon: Settings },
+  { label: 'Dashboard',      href: '/dashboard',           icon: LayoutDashboard },
+  { label: 'Posts',          href: '/posts',     icon: FileText },
+  { label: 'PostHog Events', href: '/analytics', icon: BarChart2 },
+  { label: 'Settings',       href: '/settings',  icon: Settings },
+  { label: 'Billing',        href: '/billing',   icon: CreditCard },
 ] as const
 
-export function SidebarNav() {
+interface SidebarNavProps {
+  collapsed?: boolean
+}
+
+export function SidebarNav({ collapsed = false }: SidebarNavProps) {
   const pathname = usePathname()
 
   return (
-    <nav className="flex-1 px-2 py-2 space-y-0.5">
+    <nav className="flex-1 px-2 py-1 space-y-0.5 overflow-y-auto">
       {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
-        // Active if pathname exactly matches or starts with href (for nested routes)
         const isActive =
           href === '/dashboard'
             ? pathname === '/dashboard'
@@ -38,18 +38,28 @@ export function SidebarNav() {
           <Link
             key={href}
             href={href}
+            // title shows as tooltip when collapsed — good for accessibility
+            title={collapsed ? label : undefined}
             className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all',
+              'flex items-center rounded-lg text-sm transition-all cursor-pointer select-none',
+              collapsed
+                ? 'justify-center px-2 py-2.5'
+                : 'gap-3 px-3 py-2',
               isActive
                 ? 'bg-indigo-500/15 text-white font-medium'
-                : 'text-white/45 hover:text-white/80 hover:bg-white/5'
+                : 'text-white/40 hover:text-white/80 hover:bg-white/5'
             )}
           >
             <Icon
               size={15}
-              className={isActive ? 'text-indigo-400' : 'text-current'}
+              className={cn(
+                'shrink-0 transition-colors',
+                isActive ? 'text-indigo-400' : 'text-current'
+              )}
             />
-            {label}
+            {!collapsed && (
+              <span className="truncate">{label}</span>
+            )}
           </Link>
         )
       })}
