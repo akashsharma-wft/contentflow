@@ -8,10 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useSearchParams } from 'next/navigation'
 
 export function LoginForm() {
   const router = useRouter()
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const authError = searchParams.get('error')
 
   const [email, setEmail]               = useState('')
   const [password, setPassword]         = useState('')
@@ -39,7 +42,7 @@ export function LoginForm() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin}/auth/callback` },
       })
       if (error) throw error
     } catch (err: unknown) {
@@ -51,6 +54,21 @@ export function LoginForm() {
   return (
     <div className="bg-[#13141c] border border-white/8 rounded-2xl p-6 lg:p-8 space-y-5">
 
+      {/* Show auth error if redirected back with error */}
+      {authError && (
+        <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#f87171" strokeWidth="1.5"/>
+            <path d="M12 8v4M12 16h.01" stroke="#f87171" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <p className="text-red-400 text-xs">
+            {authError === 'auth_failed'
+              ? 'Authentication failed. Please try again.'
+              : 'Something went wrong. Please try again.'}
+          </p>
+        </div>
+      )}
+      
       {/* Icon + heading — desktop only (mobile heading is in AuthShell) */}
       <div className="hidden lg:flex flex-col items-center gap-3 pb-1">
         <div className="w-14 h-14 rounded-xl bg-indigo-500 flex items-center justify-center">

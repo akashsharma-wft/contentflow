@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { AuthShell } from '@/features/auth/components/AuthShell'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 
@@ -11,7 +12,12 @@ export default function LoginPage() {
       subheadline="Welcome back"
       badge={null}
     >
-      <LoginForm />
+      {/* Suspense required because LoginForm uses useSearchParams */}
+      <Suspense fallback={
+        <div className="bg-[#13141c] border border-white/8 rounded-2xl p-8 animate-pulse h-80" />
+      }>
+        <LoginForm />
+      </Suspense>
     </AuthShell>
   )
 }
