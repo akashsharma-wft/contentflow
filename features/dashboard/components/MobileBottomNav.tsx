@@ -13,10 +13,10 @@ import { cn } from '@/lib/utils'
 
 const TABS = [
   { label: 'Dashboard', href: '/dashboard',           icon: LayoutDashboard },
-  { label: 'Posts',     href: '/dashboard/posts',     icon: FileText },
-  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart2 },
-  { label: 'Settings',  href: '/dashboard/settings',  icon: Settings },
-  { label: 'Billing',   href: '/dashboard/billing',   icon: CreditCard },
+  { label: 'Posts',     href: '/posts',     icon: FileText },
+  { label: 'Analytics', href: '/analytics', icon: BarChart2 },
+  { label: 'Settings',  href: '/settings',  icon: Settings },
+  { label: 'Billing',   href: '/billing',   icon: CreditCard },
 ] as const
 
 export function MobileBottomNav() {

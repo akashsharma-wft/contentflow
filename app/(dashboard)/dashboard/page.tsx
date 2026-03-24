@@ -5,6 +5,7 @@ import { EditorialTypographyCard } from '@/features/dashboard/components/Editori
 import { InteractionLibraryCard } from '@/features/dashboard/components/InteractionLibraryCard'
 import { GraphQLNodeCard } from '@/features/dashboard/components/GraphQLNodeCard'
 import { EnvLogsTable } from '@/features/dashboard/components/EnvLogsTable'
+import Link from 'next/link'
 
 export const metadata = { title: 'Dashboard — ContentFlow' }
 
@@ -36,15 +37,26 @@ export default function DashboardPage() {
           <span className="text-emerald-500/50">System Status: Nominal</span>
         </p>
         <div className="flex items-center gap-4">
-          {['Repository', 'Changelog', 'Security'].map((link) => (
-            <a
-              key={link}
-              href="#"
-              className="text-white/20 text-[10px] uppercase tracking-widest hover:text-white/50 transition-colors cursor-pointer"
-            >
-              {link}
-            </a>
-          ))}
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/20 text-[10px] uppercase tracking-widest hover:text-white/50 transition-colors cursor-pointer"
+          >
+            Repository
+          </a>
+          <Link
+            href="/analytics"
+            className="text-white/20 text-[10px] uppercase tracking-widest hover:text-white/50 transition-colors cursor-pointer"
+          >
+            Changelog
+          </Link>
+          <Link
+            href="/settings"
+            className="text-white/20 text-[10px] uppercase tracking-widest hover:text-white/50 transition-colors cursor-pointer"
+          >
+            Security
+          </Link>
         </div>
       </div>
     </div>

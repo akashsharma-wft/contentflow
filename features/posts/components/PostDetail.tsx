@@ -6,6 +6,7 @@ import { PortableText } from '@portabletext/react'
 import { ArrowLeft, Share2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import posthog from 'posthog-js'
+import { toast } from 'sonner'
 
 interface PostDetailProps {
   post: {
@@ -19,10 +20,11 @@ interface PostDetailProps {
     coverImage: string | null
     author: { name: string; avatar: string | null } | null
   }
+  prevSlug?: string | null
+  nextSlug?: string | null
 }
 
-// Custom components for rendering Sanity Portable Text
-// Handles images and code blocks with proper styling
+
 const portableTextComponents = {
   types: {
     image: ({ value }: { value: { asset: { url: string }; alt?: string; caption?: string } }) => (
@@ -90,7 +92,7 @@ const portableTextComponents = {
   },
 }
 
-export function PostDetail({ post }: PostDetailProps) {
+export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
   // Track post_viewed event in PostHog — required by assignment
   useEffect(() => {
     posthog.capture('post_viewed', {
@@ -111,7 +113,7 @@ export function PostDetail({ post }: PostDetailProps) {
 
       {/* Back link — matches Figma "← Back to Posts" */}
       <Link
-        href="/dashboard/posts"
+        href="/posts"
         className="inline-flex items-center gap-2 text-white/35 hover:text-white/70 text-sm mb-6 transition-colors cursor-pointer group"
       >
         <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
@@ -187,24 +189,53 @@ export function PostDetail({ post }: PostDetailProps) {
 
       {/* Bottom navigation — matches Figma back/share/next */}
       <div className="flex items-center justify-between pt-8 mt-8 border-t border-white/5">
-        <Link
-          href="/dashboard/posts"
-          className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/50 hover:text-white text-sm rounded-lg transition-all cursor-pointer"
+        {prevSlug ? (
+            <Link
+            href={`/posts/${prevSlug}`}
+            className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/50 hover:text-white text-sm rounded-lg transition-all cursor-pointer"
+            >
+            <ChevronLeft size={14} />
+            Previous
+            </Link>
+        ) : (
+            <Link
+            href="/posts"
+            className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/50 hover:text-white text-sm rounded-lg transition-all cursor-pointer"
+            >
+            <ChevronLeft size={14} />
+            All Posts
+            </Link>
+        )}
+
+        <button
+            onClick={() => {
+            navigator.clipboard.writeText(window.location.href)
+            toast.success('Link copied!')
+            }}
+            className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/50 hover:text-white text-sm rounded-lg transition-all cursor-pointer"
         >
-          <ChevronLeft size={14} />
-          Back
-        </Link>
-
-        <button className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/50 hover:text-white text-sm rounded-lg transition-all cursor-pointer">
-          <Share2 size={14} />
-          Share
+            <Share2 size={14} />
+            Share
         </button>
 
-        <button className="flex items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer">
-          Next
-          <ChevronRight size={14} />
-        </button>
-      </div>
+        {nextSlug ? (
+            <Link
+            href={`/posts/${nextSlug}`}
+            className="flex items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+            >
+            Next
+            <ChevronRight size={14} />
+            </Link>
+        ) : (
+            <Link
+            href="/posts"
+            className="flex items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+            >
+            All Posts
+            <ChevronRight size={14} />
+            </Link>
+        )}
+        </div>
 
       {/* Edit in Sanity Studio link */}
       <div className="flex justify-start pt-4">
