@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
       // Pass user ID in metadata so webhook can identify who paid
       metadata: { userId: user.id },
       customer_email: user.email,
-      success_url: `${appUrl}/dashboard/billing?success=true`,
-      cancel_url: `${appUrl}/dashboard/billing?canceled=true`,
+      success_url: `${appUrl}/dashboard/billing/success`,
+      cancel_url: `${appUrl}/dashboard/billing/cancel`,
     })
 
     return NextResponse.json({ url: session.url })
