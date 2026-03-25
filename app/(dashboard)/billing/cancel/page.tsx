@@ -23,7 +23,7 @@ export default function BillingCancelPage() {
 
         <div className="flex flex-col gap-2 pt-2">
           <Link
-            href="/dashboard/billing"
+            href="/billing"
             className="flex items-center justify-center gap-2 w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
           >
             <ArrowLeft size={14} />

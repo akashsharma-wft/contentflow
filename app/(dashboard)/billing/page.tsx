@@ -1,4 +1,3 @@
-// ─── app/(dashboard)/billing/page.tsx ────────────────────────────────────────
 'use client'
 
 import { useState, Suspense } from 'react'
@@ -120,7 +119,7 @@ function BillingContent() {
   }
 
   return (
-    <div className="px-5 lg:px-8 py-6 max-w-[800px] space-y-5">
+    <div className="px-5 lg:px-8 py-6 max-w-4xl w-full mx-auto space-y-5">
       <div>
         <h1 className="text-white text-2xl font-bold tracking-tight">
           Billing &amp; Plans
