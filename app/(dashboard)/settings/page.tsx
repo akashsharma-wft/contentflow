@@ -1,3 +1,19 @@
+import { ProfileForm } from '@/features/settings/components/ProfileForm'
+
+export const metadata = { title: 'Settings — ContentFlow' }
+
 export default function SettingsPage() {
-  return <div className="p-8 text-white/50">Settings — Phase 3</div>
+  return (
+    <div className="px-5 lg:px-12 py-6 max-w-[1100px] w-full space-y-2">
+      <div className="mb-6">
+        <h1 className="text-white text-2xl font-bold tracking-tight">
+          Account Settings
+        </h1>
+        <p className="text-white/35 text-sm mt-1">
+          Manage your architectural preferences and profile identity.
+        </p>
+      </div>
+      <ProfileForm />
+    </div>
+  )
 }

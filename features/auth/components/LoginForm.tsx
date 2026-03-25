@@ -15,6 +15,7 @@ export function LoginForm() {
   const supabase = createClient()
   const searchParams = useSearchParams()
   const authError = searchParams.get('error')
+  const redirectTo = searchParams.get('redirectTo') ?? '/dashboard'
 
   const [email, setEmail]               = useState('')
   const [password, setPassword]         = useState('')
@@ -28,7 +29,7 @@ export function LoginForm() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      router.push('/dashboard')
+      router.push(redirectTo)
       router.refresh()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Sign in failed')
