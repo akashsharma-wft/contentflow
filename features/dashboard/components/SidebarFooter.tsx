@@ -33,7 +33,9 @@ export function SidebarFooter() {
       {/* Real user profile — data from Supabase via useUser hook */}
       <div className="flex items-center gap-2.5 px-3 py-2 mb-1 rounded-lg hover:bg-white/5 transition-colors cursor-default">
         <Avatar className="w-6 h-6 shrink-0">
-          <AvatarImage src={profile?.avatar_url ?? ''} alt={profile?.display_name ?? ''} />
+          {profile?.avatar_url && (
+            <AvatarImage src={profile.avatar_url} alt={profile.display_name ?? ''} />
+          )}
           <AvatarFallback className="bg-indigo-500 text-white text-[9px] font-semibold">
             {initials}
           </AvatarFallback>

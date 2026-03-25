@@ -21,7 +21,9 @@ export function MobileTopBar() {
 
       <div className="flex items-center gap-3">
         <Avatar className="w-8 h-8 cursor-pointer ring-1 ring-white/10 hover:ring-indigo-500/50 transition-all">
-          <AvatarImage src={profile?.avatar_url ?? ''} alt={profile?.display_name ?? 'User'} />
+          {profile?.avatar_url && (
+            <AvatarImage src={profile.avatar_url} alt={profile.display_name ?? ''} />
+          )}
           <AvatarFallback className="bg-indigo-500 text-white text-[10px] font-semibold">
             {initials}
           </AvatarFallback>
