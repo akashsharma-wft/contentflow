@@ -42,37 +42,39 @@ export async function POST(request: NextRequest) {
     const userId = session.metadata?.userId
 
     if (!userId) {
-      console.error('No userId in session metadata')
       return NextResponse.json({ error: 'No userId' }, { status: 400 })
     }
 
-    // Upgrade user to pro in Supabase
     const { error } = await supabase
       .from('profiles')
-      .update({ subscription_tier: 'pro' })
+      .update({
+        subscription_tier: 'pro',
+        stripe_customer_id: session.customer as string,
+        subscription_id: session.subscription as string,
+      })
       .eq('id', userId)
 
     if (error) {
-      console.error('Failed to update subscription tier:', error)
+      console.error('Failed to update subscription:', error)
       return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
     }
+  }
 
-    // Track upgrade_completed event in PostHog from server
-    // Uses PostHog Node SDK for server-side events
-    const { PostHog } = await import('posthog-node')
-    const serverPosthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!)
-    await serverPosthog.capture({
-      distinctId: userId,
-      event: 'upgrade_completed',
-      properties: {
-        plan: 'pro',
-        stripe_session: session.id,
-        timestamp: new Date().toISOString(),
-      },
-    })
-    await serverPosthog.shutdown()
+  // Handle cancellation — use subscription_id to find the user
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object
 
-    console.log(`User ${userId} upgraded to Pro`)
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        subscription_tier: 'free',
+        subscription_id: null,
+      })
+      .eq('subscription_id', subscription.id)
+
+    if (error) {
+      console.error('Failed to downgrade subscription:', error)
+    }
   }
 
   // Handle subscription cancelled
