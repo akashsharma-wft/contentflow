@@ -60,26 +60,27 @@ function BillingContent() {
   const postLimit = isPro ? 999999 : 5
   const apiLimit  = isPro ? 10000  : 1000
 
+  // Replace the USAGE_ITEMS with real data derived from actual queries
   const usageItems = [
     {
       label: 'Posts Published',
-      current: postStats?.published ?? 0,
-      max: postLimit,
+      current: postStats?.published ?? 0,      // real from Sanity
+      max: isPro ? 999999 : 5,
     },
     {
       label: 'API Requests',
-      current: 3241, // in production, fetch this from your analytics
-      max: apiLimit,
+      current: 0,                              // 0 — no real tracking yet
+      max: isPro ? 10000 : 1000,
     },
     {
       label: 'Storage Utilization',
-      current: 1.2,
+      current: 0,                              // 0 — no real tracking yet
       max: isPro ? 5 : 1,
       unit: 'GB' as const,
     },
     {
       label: 'Team Seats',
-      current: 1,
+      current: 1,                              // always 1 for current user
       max: isPro ? 5 : 1,
     },
   ]
@@ -119,7 +120,7 @@ function BillingContent() {
   }
 
   return (
-    <div className="px-5 lg:px-8 py-6 max-w-4xl w-full mx-auto space-y-5">
+    <div className="py-6 space-y-5 max-w-[800px]">
       <div>
         <h1 className="text-white text-2xl font-bold tracking-tight">
           Billing &amp; Plans

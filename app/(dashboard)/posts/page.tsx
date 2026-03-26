@@ -32,14 +32,15 @@ export default function PostsPage() {
   const publishedCount = (posts ?? []).filter((p: { publishedAt: string | null }) => p.publishedAt).length
   const draftCount     = (posts ?? []).length - publishedCount
 
+  const featuredPosts = (posts ?? []).filter((p: { featured: boolean }) => p.featured)
+
+
   return (
-    <div className="px-5 lg:px-8 py-6 space-y-5 max-w-[1200px]">
+    <div className="py-6 space-y-5">
       {/* Featured banner — shown when PostHog feature flag 'show-featured-banner' is enabled */}
-      {!isLoading && filteredPosts.some((p: { featured: boolean }) => p.featured) && (
-        <FeaturedBanner
-          post={filteredPosts.find((p: { featured: boolean }) => p.featured)}
-        />
-      )}
+        {featuredPosts.length > 0 && (
+          <FeaturedBanner posts={featuredPosts} />
+        )}
       <PostsHeader />
 
       {/* Search bar */}
@@ -66,7 +67,6 @@ export default function PostsPage() {
           total={posts?.length ?? 0}
           published={publishedCount}
           drafts={draftCount}
-          views={8867}
         />
       )}
 

@@ -6,14 +6,14 @@ import PostHogProvider from './posthog-provider'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 60 * 1000, // 1 minute
-          },
+    () => new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 30 * 1000, // 30 seconds default
+          refetchOnWindowFocus: true,
         },
-      })
+      },
+    })
   )
 
   return (

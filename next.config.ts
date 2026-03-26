@@ -2,6 +2,7 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ['sanity'],
+  trailingSlash: false,
   images: {
     remotePatterns: [
       {
@@ -15,5 +16,3 @@ const nextConfig: NextConfig = {
     ],
   },
 }
-
-export default nextConfig

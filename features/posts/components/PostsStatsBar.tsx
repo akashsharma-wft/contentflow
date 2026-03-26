@@ -4,10 +4,10 @@ interface PostsStatsBarProps {
   total: number
   published: number
   drafts: number
-  views: number
 }
 
-export function PostsStatsBar({ total, published, drafts, views }: PostsStatsBarProps) {
+export function PostsStatsBar({ total, published, drafts }: PostsStatsBarProps) {
+
   const stats = [
     {
       label: 'Total Posts',
@@ -29,21 +29,14 @@ export function PostsStatsBar({ total, published, drafts, views }: PostsStatsBar
     {
       label: 'Drafts',
       value: drafts.toString(),
-      sub: 'No change',
+      sub: 'Unpublished',
       subColor: 'text-white/30',
       icon: FileEdit,
-    },
-    {
-      label: 'Total Views',
-      value: views >= 1000 ? `${(views / 1000).toFixed(1)}k` : views.toString(),
-      sub: '+12%',
-      subColor: 'text-indigo-400',
-      icon: Eye,
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
       {stats.map(({ label, value, sub, subColor, icon: Icon, bar, barColor, barWidth }) => (
         <div
           key={label}

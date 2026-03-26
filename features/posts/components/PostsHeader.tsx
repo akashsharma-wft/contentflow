@@ -4,6 +4,7 @@ import { RefreshCw, Plus } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { CreatePostModal } from './CreatePostModal'
+import { toast } from 'sonner'
 
 export function PostsHeader() {
   const queryClient = useQueryClient()
@@ -12,8 +13,18 @@ export function PostsHeader() {
 
   async function handleSync() {
     setIsSyncing(true)
-    await queryClient.invalidateQueries({ queryKey: ['posts'] })
-    setTimeout(() => setIsSyncing(false), 800)
+    try {
+      // Force remove and refetch — not just mark stale
+      await queryClient.refetchQueries({
+        queryKey: ['posts'],
+        type: 'active',    // refetch immediately even if not stale
+      })
+      toast.success('Posts synced from Sanity')
+    } catch {
+      toast.error('Sync failed')
+    } finally {
+      setIsSyncing(false)
+    }
   }
 
   return (
@@ -30,7 +41,6 @@ export function PostsHeader() {
             Manage your technical documentation and editorial content.
           </p>
         </div>
-
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleSync}
@@ -40,8 +50,6 @@ export function PostsHeader() {
             <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} />
             {isSyncing ? 'Syncing...' : 'Sync'}
           </button>
-
-          {/* Opens the create post modal — no longer goes to Studio */}
           <button
             onClick={() => setModalOpen(true)}
             className="flex items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
@@ -51,12 +59,7 @@ export function PostsHeader() {
           </button>
         </div>
       </div>
-
-      {/* Create post modal */}
-      <CreatePostModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-      />
+      <CreatePostModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   )
 }

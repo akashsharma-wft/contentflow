@@ -21,14 +21,21 @@ interface LiveEvent {
   distinct_id: string
 }
 
-const EVENT_COLORS: Record<string, string> = {
-  post_viewed:        'text-indigo-400 bg-indigo-500/10',
-  upgrade_intent:     'text-amber-400  bg-amber-500/10',
-  upgrade_completed:  'text-purple-400 bg-purple-500/10',
-  form_submitted:     'text-emerald-400 bg-emerald-500/10',
-  login:              'text-emerald-400 bg-emerald-500/10',
-  page_view:          'text-white/40 bg-white/5',
-  '$pageview':        'text-white/40 bg-white/5',
+const EVENT_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  post_viewed:        { bg: 'bg-indigo-500/15',  text: 'text-indigo-300',  label: 'post_viewed' },
+  upgrade_intent:     { bg: 'bg-amber-500/15',   text: 'text-amber-300',   label: 'upgrade_intent' },
+  upgrade_completed:  { bg: 'bg-purple-500/15',  text: 'text-purple-300',  label: 'upgrade_completed' },
+  form_submitted:     { bg: 'bg-emerald-500/15', text: 'text-emerald-300', label: 'form_submitted' },
+  login:              { bg: 'bg-emerald-500/15', text: 'text-emerald-300', label: 'login' },
+  '$pageview':        { bg: 'bg-white/5',        text: 'text-white/40',    label: '$pageview' },
+  page_view:          { bg: 'bg-white/5',        text: 'text-white/40',    label: 'page_view' },
+  '$autocapture':     { bg: 'bg-white/5',        text: 'text-white/25',    label: '$autocapture' },
+  '$web_vitals':      { bg: 'bg-blue-500/15',    text: 'text-blue-300',    label: '$web_vitals' },
+  '$set':             { bg: 'bg-white/5',        text: 'text-white/25',    label: '$set' },
+}
+
+function getEventStyle(event: string) {
+  return EVENT_COLORS[event] ?? { bg: 'bg-white/5', text: 'text-white/40', label: event }
 }
 
 function timeAgo(timestamp: string): string {
@@ -76,7 +83,7 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
     }
 
     fetchEvents()
-    posthog?.capture('page_view', { path: '/dashboard/analytics' })
+    posthog?.capture('page_view', { path: '/analytics' })
   }, [posthog])
 
   useEffect(() => {
@@ -87,7 +94,7 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
   }, [posthog, user?.id, serverFlags.showFeaturedBanner])
 
   return (
-    <div className="px-5 lg:px-8 py-6 space-y-5 max-w-[900px]">
+    <div className="py-6 space-y-5 max-w-[900px]">
       <div>
         <h1 className="text-white text-2xl font-bold tracking-tight">PostHog Events</h1>
         <p className="text-white/30 text-[10px] uppercase tracking-widest font-mono mt-1">
@@ -138,22 +145,22 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
           </div>
         ) : (
           <div className="divide-y divide-white/5">
-            {events.map((event, i) => (
-              <div key={i} className="flex items-center gap-4 px-5 py-3 hover:bg-white/[0.02] transition-colors">
-                <span className="text-white/25 text-xs font-mono w-16 shrink-0">
-                  {timeAgo(event.timestamp)}
-                </span>
-                <span className={cn(
-                  'px-2 py-0.5 text-[10px] font-semibold font-mono rounded shrink-0',
-                  EVENT_COLORS[event.event] ?? 'text-white/40 bg-white/5'
-                )}>
-                  {event.event}
-                </span>
-                <span className="text-white/35 text-xs font-mono truncate">
-                  {formatProps(event.properties)}
-                </span>
-              </div>
-            ))}
+            {events.map((event, i) => {
+              const style = getEventStyle(event.event)
+              return (
+                <div key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors group">
+                  <span className="text-white/20 text-[11px] font-mono w-16 shrink-0 tabular-nums">
+                    {timeAgo(event.timestamp)}
+                  </span>
+                  <span className={`px-2.5 py-1 text-[10px] font-semibold font-mono rounded-md shrink-0 ${style.bg} ${style.text}`}>
+                    {style.label}
+                  </span>
+                  <span className="text-white/30 text-xs font-mono truncate flex-1">
+                    {formatProps(event.properties)}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
