@@ -4,7 +4,7 @@ export const metadata = { title: 'Settings — ContentFlow' }
 
 export default function SettingsPage() {
   return (
-    <div className="px-5 lg:px-12 py-6 max-w-[1100px] w-full space-y-2">
+    <div className="py-6 max-w-[680px]">
       <div className="mb-6">
         <h1 className="text-white text-2xl font-bold tracking-tight">
           Account Settings
