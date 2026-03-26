@@ -11,6 +11,7 @@ import { PostsTableSkeleton } from '@/features/posts/components/PostsTableSkelet
 import { useDebounce } from '@/hooks/useDebounce'
 import { useState } from 'react'
 import { Search } from 'lucide-react'
+import { FeaturedBanner } from '@/features/posts/components/FeaturedBanner'
 
 export default function PostsPage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -33,6 +34,12 @@ export default function PostsPage() {
 
   return (
     <div className="px-5 lg:px-8 py-6 space-y-5 max-w-[1200px]">
+      {/* Featured banner — shown when PostHog feature flag 'show-featured-banner' is enabled */}
+      {!isLoading && filteredPosts.some((p: { featured: boolean }) => p.featured) && (
+        <FeaturedBanner
+          post={filteredPosts.find((p: { featured: boolean }) => p.featured)}
+        />
+      )}
       <PostsHeader />
 
       {/* Search bar */}
