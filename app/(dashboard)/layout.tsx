@@ -13,10 +13,11 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <MobileTopBar />
         <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
-          {/* Center all content with consistent max-width */}
-          <div className="mx-auto w-full max-w-[1100px] px-4 lg:px-8">
-            {children}
-          </div>
+          <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
+            <div className="w-full max-w-5xl mx-auto py-6 px-6 lg:px-8">
+              {children}
+            </div>
+          </main>
         </main>
         <MobileBottomNav />
       </div>

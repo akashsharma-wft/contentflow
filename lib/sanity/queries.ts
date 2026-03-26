@@ -1,5 +1,3 @@
-// All GROQ queries live here — never write inline queries in components.
-// Import these constants wherever you need to fetch Sanity data.
 import { groq } from 'next-sanity'
 
 export const ALL_POSTS_QUERY = groq`
@@ -21,5 +19,12 @@ export const POST_BY_SLUG_QUERY = groq`
     ...,
     author->{ name, bio, "avatar": image.asset->url },
     "coverImage": coverImage.asset->url
+  }
+`
+
+export const MY_POSTS_COUNT_QUERY = groq`
+  {
+    "myPosts": count(*[_type == "post" && author->_id == $authorId]),
+    "myPublished": count(*[_type == "post" && author->_id == $authorId && defined(publishedAt)])
   }
 `

@@ -68,7 +68,15 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
         const response = await fetch('/api/analytics/events')
         if (response.ok) {
           const data = await response.json()
-          setEvents(data.events ?? [])
+          // Filter to show meaningful events first, autocapture at bottom
+          const sortedEvents = [...data].sort((a, b) => {
+            const isCustomA = !a.event.startsWith('$')
+            const isCustomB = !b.event.startsWith('$')
+            if (isCustomA && !isCustomB) return -1
+            if (!isCustomA && isCustomB) return 1
+            return 0
+          })
+          setEvents(sortedEvents)
           setStats({
             eventsToday: data.eventsToday ?? 0,
             uniqueUsers: data.uniqueUsers ?? 0,

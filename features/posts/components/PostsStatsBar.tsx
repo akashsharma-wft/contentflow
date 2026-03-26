@@ -12,7 +12,6 @@ export function PostsStatsBar({ total, published, drafts }: PostsStatsBarProps) 
     {
       label: 'Total Posts',
       value: total.toLocaleString(),
-      sub: '+2 vs last week',
       subColor: 'text-indigo-400',
       icon: FileText,
     },

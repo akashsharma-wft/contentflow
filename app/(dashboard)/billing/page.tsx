@@ -39,18 +39,19 @@ function BillingContent() {
     refetchInterval: 10000,
   })
 
-  // Fetch real post counts from Sanity
   const { data: postStats } = useQuery({
-    queryKey: ['post-stats'],
+    queryKey: ['my-post-stats', user?.id],
     queryFn: async () => {
+      if (!user?.id) return { total: 0, published: 0 }
+      const authorId = `author-${user.id}`
       const { sanityClient } = await import('@/lib/sanity/client')
       const stats = await sanityClient.fetch(`{
-        "total": count(*[_type == "post"]),
-        "published": count(*[_type == "post" && defined(publishedAt)]),
-      }`)
+        "total": count(*[_type == "post" && author._ref == $authorId]),
+        "published": count(*[_type == "post" && author._ref == $authorId && defined(publishedAt)])
+      }`, { authorId })
       return stats as { total: number; published: number }
     },
-    staleTime: 60000,
+    enabled: !!user?.id,
   })
 
   const currentTier = (profile?.subscription_tier as 'free' | 'pro') ?? 'free'

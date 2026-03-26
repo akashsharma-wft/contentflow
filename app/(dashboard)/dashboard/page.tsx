@@ -36,11 +36,11 @@ export default function DashboardPage() {
             className="text-white/20 text-[10px] uppercase tracking-widest hover:text-white/50 transition-colors">
             Repository
           </a>
-          <Link href="/dashboard/analytics"
+          <Link href="/analytics"
             className="text-white/20 text-[10px] uppercase tracking-widest hover:text-white/50 transition-colors">
             Changelog
           </Link>
-          <Link href="/dashboard/settings"
+          <Link href="/settings"
             className="text-white/20 text-[10px] uppercase tracking-widest hover:text-white/50 transition-colors">
             Security
           </Link>
