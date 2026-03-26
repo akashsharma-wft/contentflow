@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/signup', '/auth/callback']
+const PUBLIC_ROUTES = ['/login', '/signup', '/auth/callback', '/api/webhooks/stripe', '/api/webhooks']
 
 // Routes that should redirect to dashboard if already logged in
 const AUTH_ROUTES = ['/login', '/signup']

@@ -10,8 +10,7 @@ import { FileText, Users, CreditCard, Activity, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 export function DashboardStats() {
-  const { user, profile } = useUser()
-  const supabase = createClient()
+  const { profile } = useUser()
 
   // Real post count from Sanity
   const { data: posts, isLoading: postsLoading } = useQuery({
@@ -29,28 +28,28 @@ export function DashboardStats() {
       value: postsLoading ? null : postCount.toString(),
       sub: postsLoading ? '' : `${publishedCount} published`,
       icon: FileText,
-      href: '/dashboard/posts',
+      href: '/posts',
     },
     {
       label: 'Current Plan',
       value: profile?.subscription_tier?.toUpperCase() ?? null,
       sub: profile?.subscription_tier === 'pro' ? 'Active subscription' : 'Free tier',
       icon: CreditCard,
-      href: '/dashboard/billing',
+      href: '/billing',
     },
     {
       label: 'Account',
       value: profile?.role?.toUpperCase() ?? null,
       sub: profile?.email ?? '—',
       icon: Users,
-      href: '/dashboard/settings',
+      href: '/settings',
     },
     {
       label: 'Analytics',
       value: 'Live',
       sub: 'PostHog connected',
       icon: Activity,
-      href: '/dashboard/analytics',
+      href: '/analytics',
     },
   ]
 

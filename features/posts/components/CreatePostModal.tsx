@@ -165,6 +165,16 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
 
       const data = await response.json()
 
+      if (response.status === 403 && data.limitReached) {
+        toast.error('Post limit reached — upgrade to Pro for unlimited posts', {
+          action: {
+            label: 'Upgrade',
+            onClick: () => window.location.href = '/billing',
+          },
+        })
+        return
+      }
+
       if (!response.ok) {
         throw new Error(data.error ?? 'Failed to create post')
       }
