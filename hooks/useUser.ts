@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import posthog from 'posthog-js'
 import type { User } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
 
@@ -12,8 +13,6 @@ export function useUser() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // getUser() is the SECURE way — validates the session with Supabase server
-    // Never use getSession() for security checks — it only reads local storage
     async function getUser() {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
@@ -25,6 +24,20 @@ export function useUser() {
           .eq('id', user.id)
           .single()
         setProfile(profile)
+
+        // Identify user in PostHog — required by assignment
+        // This links all events to this specific user
+        if (profile) {
+          posthog.identify(user.id, {
+            email: user.email,
+            name: profile.display_name,
+            subscription_tier: profile.subscription_tier,
+            role: profile.role,
+          })
+        }
+      } else {
+        // Reset PostHog identity on logout
+        posthog.reset()
       }
 
       setIsLoading(false)
@@ -32,15 +45,16 @@ export function useUser() {
 
     getUser()
 
-    // Listen for auth changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setUser(session?.user ?? null)
-        if (!session?.user) setProfile(null)
+        if (!session?.user) {
+          setProfile(null)
+          posthog.reset()
+        }
       }
     )
 
-    // Cleanup the listener when the component unmounts
     return () => subscription.unsubscribe()
   }, [supabase])
 
