@@ -6,26 +6,14 @@ import { useState } from 'react'
 import { CreatePostModal } from './CreatePostModal'
 import { toast } from 'sonner'
 
-export function PostsHeader() {
-  const queryClient = useQueryClient()
-  const [isSyncing, setIsSyncing] = useState(false)
-  const [modalOpen, setModalOpen] = useState(false)
+interface PostsHeaderProps {
+  onSync: () => Promise<unknown>
+  isSyncing: boolean
+}
 
-  async function handleSync() {
-    setIsSyncing(true)
-    try {
-      // Force remove and refetch — not just mark stale
-      await queryClient.refetchQueries({
-        queryKey: ['posts'],
-        type: 'active',    // refetch immediately even if not stale
-      })
-      toast.success('Posts synced from Sanity')
-    } catch {
-      toast.error('Sync failed')
-    } finally {
-      setIsSyncing(false)
-    }
-  }
+export function PostsHeader({ onSync, isSyncing }: PostsHeaderProps) {
+  const queryClient = useQueryClient()
+  const [modalOpen, setModalOpen] = useState(false)
 
   return (
     <>
@@ -43,7 +31,7 @@ export function PostsHeader() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={handleSync}
+            onClick={onSync}
             disabled={isSyncing}
             className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/60 hover:text-white text-sm rounded-lg transition-all cursor-pointer disabled:opacity-50"
           >

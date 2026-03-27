@@ -27,6 +27,7 @@ import { ProfileAvatar } from './ProfileAvatar'
 import { DeleteAccountDialog } from './DeleteAccountDialog'
 import { CheckCircle2, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { usePostHog } from 'posthog-js/react'
 
 // Zod schema — exactly matching assignment requirement
 const profileSchema = z.object({
@@ -137,6 +138,12 @@ export function ProfileForm() {
       })
     }
   }
+
+  const posthog = usePostHog()
+  posthog?.capture('form_submitted', {
+  form: 'settings_profile',
+  fields_changed: Object.keys(data).length,
+})
 
   // Show skeleton while data is loading — not the form
   if (isLoading || !profile) {

@@ -21,6 +21,7 @@ interface Post {
   featured: boolean
   publishedAt: string | null
   status: 'published' | 'draft'
+  authorId?: string
 }
 
 interface PostsTableProps {

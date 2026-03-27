@@ -19,7 +19,6 @@ function BillingContent() {
   const router = useRouter()
   const { user } = useUser()
   const supabase = createClient()
-  const queryClient = useQueryClient()
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false)
 
   // Fetch real profile data including subscription tier
@@ -43,12 +42,11 @@ function BillingContent() {
     queryKey: ['my-post-stats', user?.id],
     queryFn: async () => {
       if (!user?.id) return { total: 0, published: 0 }
-      const authorId = `author-${user.id}`
       const { sanityClient } = await import('@/lib/sanity/client')
       const stats = await sanityClient.fetch(`{
-        "total": count(*[_type == "post" && author._ref == $authorId]),
-        "published": count(*[_type == "post" && author._ref == $authorId && defined(publishedAt)])
-      }`, { authorId })
+        "total": count(*[_type == "post" && authorId == $userId]),
+        "published": count(*[_type == "post" && authorId == $userId && defined(publishedAt)])
+      }`, { userId: user.id })
       return stats as { total: number; published: number }
     },
     enabled: !!user?.id,

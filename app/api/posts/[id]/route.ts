@@ -20,8 +20,7 @@ export async function PATCH(
     // Verify ownership — the post ID should contain reference to this user
     // Posts created by our API have format: post-{timestamp}-{random}
     // Authors have format: author-{userId}
-    const authorId = `author-${user.id}`
-    const checkUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=*[_id=="${id}" && author._ref=="${authorId}"][0]{_id}`
+    const checkUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=*[_id=="${id}" && authorId=="${user.id}"][0]{_id}`
     const checkResponse = await fetch(checkUrl, {
       headers: { Authorization: `Bearer ${SANITY_TOKEN}` }
     })

@@ -7,6 +7,8 @@ import { ArrowLeft, Share2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import posthog from 'posthog-js'
 import { toast } from 'sonner'
+import { usePostHog } from 'posthog-js/react'
+
 
 interface PostDetailProps {
   post: {
@@ -93,20 +95,22 @@ const portableTextComponents = {
 }
 
 export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
-  // Track post_viewed event in PostHog — required by assignment
-  useEffect(() => {
-    posthog.capture('post_viewed', {
-      post_slug: post.slug,
-      post_title: post.title,
-    })
-  }, [post.slug, post.title])
+  const posthog = usePostHog()
 
-  const authorInitials = post.author?.name
-    ?.split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) ?? 'AU'
+  useEffect(() => {
+    posthog?.capture('post_viewed', {
+      slug: post.slug,
+      title: post.title,
+      author: post.authorName,
+      featured: post.featured,
+    })
+  }, [post.slug])
+
+
+
+    const authorName    = post.authorName ?? 'Unknown'
+    const authorAvatar  = post.authorAvatar ?? null
+    const authorInitials = authorName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
 
   return (
     <div className="max-w-[680px] mx-auto px-5 lg:px-8 py-8">
@@ -149,19 +153,15 @@ export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
         <div className="flex items-center gap-2.5">
           {/* Author avatar */}
           <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-semibold shrink-0">
-            {post.author?.avatar
-              ? <img src={post.author.avatar} alt={post.author.name} className="w-full h-full rounded-full object-cover" />
+            {authorAvatar
+              ? <img src={authorAvatar} alt={authorName} className="w-full h-full rounded-full object-cover" />
               : authorInitials
             }
           </div>
           <div>
-            <p className="text-white/70 text-sm font-medium">{post.author?.name ?? 'Unknown'}</p>
+            <p className="text-white/70 text-sm font-medium">{authorName}</p>
             <p className="text-white/30 text-xs">
-              {post.publishedAt
-                ? format(new Date(post.publishedAt), 'MMM dd, yyyy')
-                : 'Unpublished'}
-              {' · '}
-              <span className="text-white/20">2,841 views</span>
+              {post.publishedAt ? format(new Date(post.publishedAt), 'MMM dd, yyyy') : 'Unpublished'}
             </p>
           </div>
         </div>

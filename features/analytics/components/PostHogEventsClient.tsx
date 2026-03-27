@@ -61,6 +61,26 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
   const [featureFlagEnabled, setFeatureFlagEnabled] = useState(serverFlags.showFeaturedBanner)
   const [stats, setStats] = useState({ eventsToday: 0, uniqueUsers: 0, avgSession: '—' })
 
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  async function refreshEvents() {
+    setIsRefreshing(true)
+    try {
+      const response = await fetch('/api/analytics/events')
+      if (response.ok) {
+        const data = await response.json()
+        setEvents(data.events ?? [])
+        setStats({
+          eventsToday: data.eventsToday ?? 0,
+          uniqueUsers: data.uniqueUsers ?? 0,
+          avgSession: data.avgSession ?? '—',
+        })
+      }
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   useEffect(() => {
     // Fetch real events from our API route
     async function fetchEvents() {
@@ -133,7 +153,16 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
             <h3 className="text-white text-sm font-semibold">Live event stream</h3>
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
-          <span className="text-white/20 text-[10px] font-mono">NEXT_PUBLIC_POSTHOG_KEY</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={refreshEvents}
+              disabled={isRefreshing}
+              className="text-white/30 hover:text-white/60 text-[10px] uppercase tracking-widest font-mono cursor-pointer transition-colors disabled:opacity-50"
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+            <span className="text-white/20 text-[10px] font-mono">NEXT_PUBLIC_POSTHOG_KEY</span>
+          </div>
         </div>
 
         {isLoading ? (
