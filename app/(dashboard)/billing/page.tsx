@@ -10,16 +10,16 @@ import { UsageCard } from '@/features/billing/components/UsageCard'
 import { PlansGrid } from '@/features/billing/components/PlansGrid'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import posthog from 'posthog-js'
+import { usePostHog } from 'posthog-js/react'
 import { Shield } from 'lucide-react'
 
 const PRO_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!
 
 function BillingContent() {
   const router = useRouter()
+  const posthog = usePostHog()
   const { user } = useUser()
   const supabase = createClient()
-  const queryClient = useQueryClient()
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false)
 
   // Fetch real profile data including subscription tier
@@ -43,12 +43,11 @@ function BillingContent() {
     queryKey: ['my-post-stats', user?.id],
     queryFn: async () => {
       if (!user?.id) return { total: 0, published: 0 }
-      const authorId = `author-${user.id}`
       const { sanityClient } = await import('@/lib/sanity/client')
       const stats = await sanityClient.fetch(`{
-        "total": count(*[_type == "post" && author._ref == $authorId]),
-        "published": count(*[_type == "post" && author._ref == $authorId && defined(publishedAt)])
-      }`, { authorId })
+        "total": count(*[_type == "post" && authorId == $userId]),
+        "published": count(*[_type == "post" && authorId == $userId && defined(publishedAt)])
+      }`, { userId: user.id })
       return stats as { total: number; published: number }
     },
     enabled: !!user?.id,
@@ -116,12 +115,8 @@ function BillingContent() {
     }
   }
 
-  function handleManage() {
-    toast.info('Stripe Customer Portal — configure portal URL in Stripe dashboard')
-  }
-
   return (
-    <div className="py-6 space-y-5 max-w-[800px]">
+    <div className="py-6 space-y-5 max-w-[9o00px] mx-auto">
       <div>
         <h1 className="text-white text-2xl font-bold tracking-tight">
           Billing &amp; Plans
@@ -141,7 +136,6 @@ function BillingContent() {
         <>
           <CurrentPlanCard
             tier={currentTier}
-            onManage={handleManage}
             onUpgrade={handleUpgrade}
             isLoading={isCheckoutLoading}
           />

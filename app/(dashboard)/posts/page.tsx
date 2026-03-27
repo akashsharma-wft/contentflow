@@ -8,42 +8,54 @@ import { PostsStatsBar } from '@/features/posts/components/PostsStatsBar'
 import { PostsTable } from '@/features/posts/components/PostsTable'
 import { PostsEmptyState } from '@/features/posts/components/PostsEmptyState'
 import { PostsTableSkeleton } from '@/features/posts/components/PostsTableSkeleton'
+import { FeaturedBanner } from '@/features/posts/components/FeaturedBanner'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useState } from 'react'
 import { Search } from 'lucide-react'
-import { FeaturedBanner } from '@/features/posts/components/FeaturedBanner'
+import { toast } from 'sonner'
 
 export default function PostsPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  // Debounce search input by 300ms as required by assignment
-  const debouncedSearch = useDebounce(searchQuery, 300)
+  const [isSyncing, setIsSyncing]     = useState(false)
+  const debouncedSearch               = useDebounce(searchQuery, 300)
 
-  // TanStack Query — query key must be ['posts'] per assignment
-  const { data: posts, isLoading, isError } = useQuery({
+  const { data: posts, isLoading, isError, refetch } = useQuery({
     queryKey: ['posts'],
     queryFn: () => sanityClient.fetch(ALL_POSTS_QUERY),
+    staleTime: 0,
   })
 
-  // Client-side filter by title — no new API call, uses cached data
-  const filteredPosts = (posts ?? []).filter((post: { title: string }) =>
+  async function handleSync() {
+    setIsSyncing(true)
+    try {
+      await refetch()
+      toast.success('Synced from Sanity')
+    } catch {
+      toast.error('Sync failed')
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  const allPosts       = posts ?? []
+  const filteredPosts  = allPosts.filter((post: { title: string }) =>
     post.title.toLowerCase().includes(debouncedSearch.toLowerCase())
   )
-
-  const publishedCount = (posts ?? []).filter((p: { publishedAt: string | null }) => p.publishedAt).length
-  const draftCount     = (posts ?? []).length - publishedCount
-
-  const featuredPosts = (posts ?? []).filter((p: { featured: boolean }) => p.featured)
-
+  const publishedCount = allPosts.filter((p: { publishedAt: string | null }) => !!p.publishedAt).length
+  const draftCount     = allPosts.length - publishedCount
+  const featuredPosts = allPosts.filter(
+    (p: { featured: boolean; publishedAt: string | null }) =>
+      p.featured && !!p.publishedAt
+  )
 
   return (
     <div className="py-6 space-y-5">
-      {/* Featured banner — shown when PostHog feature flag 'show-featured-banner' is enabled */}
-        {featuredPosts.length > 0 && (
-          <FeaturedBanner posts={featuredPosts} />
-        )}
-      <PostsHeader />
+      {featuredPosts.length > 0 && (
+        <FeaturedBanner posts={featuredPosts} />
+      )}
 
-      {/* Search bar */}
+      <PostsHeader onSync={handleSync} isSyncing={isSyncing} />
+
       <div className="relative max-w-sm">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
         <input
@@ -55,41 +67,47 @@ export default function PostsPage() {
         />
       </div>
 
-      {/* Stats bar — shows skeleton while loading */}
       {isLoading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-3 gap-3">
+          {[...Array(3)].map((_, i) => (
             <div key={i} className="bg-[#13141c] border border-white/5 rounded-xl p-4 h-20 animate-pulse" />
           ))}
         </div>
       ) : (
         <PostsStatsBar
-          total={posts?.length ?? 0}
+          total={allPosts.length}
           published={publishedCount}
           drafts={draftCount}
         />
       )}
 
-      {/* Posts table or empty state */}
       {isLoading && <PostsTableSkeleton />}
+
       {isError && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm">
           Failed to load posts. Check your Sanity connection.
         </div>
       )}
+
       {!isLoading && !isError && filteredPosts.length === 0 && <PostsEmptyState />}
+
       {!isLoading && !isError && filteredPosts.length > 0 && (
-        <PostsTable posts={filteredPosts.map((p: {
-          _id: string
-          title: string
-          slug: string
-          tags: string[]
-          featured: boolean
-          publishedAt: string | null
-        }) => ({
-          ...p,
-          status: p.publishedAt ? 'published' : 'draft',
-        }))} />
+        <PostsTable
+          posts={filteredPosts.map((p: {
+            _id: string
+            title: string
+            slug: string
+            tags: string[] | null
+            featured: boolean
+            publishedAt: string | null
+            authorId?: string
+            authorName?: string
+          }) => ({
+            ...p,
+            tags: p.tags ?? [],
+            status: p.publishedAt ? ('published' as const) : ('draft' as const),
+          }))}
+        />
       )}
     </div>
   )

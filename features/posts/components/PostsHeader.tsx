@@ -1,31 +1,18 @@
 'use client'
 
 import { RefreshCw, Plus } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { CreatePostModal } from './CreatePostModal'
-import { toast } from 'sonner'
+import Link from 'next/link'
+import { Eye } from 'lucide-react'
 
-export function PostsHeader() {
-  const queryClient = useQueryClient()
-  const [isSyncing, setIsSyncing] = useState(false)
+interface PostsHeaderProps {
+  onSync: () => Promise<unknown>
+  isSyncing: boolean
+}
+
+export function PostsHeader({ onSync, isSyncing }: PostsHeaderProps) {
   const [modalOpen, setModalOpen] = useState(false)
-
-  async function handleSync() {
-    setIsSyncing(true)
-    try {
-      // Force remove and refetch — not just mark stale
-      await queryClient.refetchQueries({
-        queryKey: ['posts'],
-        type: 'active',    // refetch immediately even if not stale
-      })
-      toast.success('Posts synced from Sanity')
-    } catch {
-      toast.error('Sync failed')
-    } finally {
-      setIsSyncing(false)
-    }
-  }
 
   return (
     <>
@@ -43,7 +30,7 @@ export function PostsHeader() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={handleSync}
+            onClick={onSync}
             disabled={isSyncing}
             className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/60 hover:text-white text-sm rounded-lg transition-all cursor-pointer disabled:opacity-50"
           >
@@ -57,6 +44,13 @@ export function PostsHeader() {
             <Plus size={13} />
             New Post
           </button>
+          <Link
+            href="/posts/preview?preview=true"
+            className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:text-amber-200 text-sm rounded-lg transition-all cursor-pointer"
+          >
+            <Eye size={13} />
+            Preview
+          </Link>
         </div>
       </div>
       <CreatePostModal open={modalOpen} onClose={() => setModalOpen(false)} />

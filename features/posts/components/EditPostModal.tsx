@@ -20,11 +20,12 @@ interface EditPostModalProps {
     tags?: string[]
     featured: boolean
     publishedAt: string | null
-    author?: { name: string } | null
+    authorId?: string
   } | null
+  currentUserId: string
 }
 
-export function EditPostModal({ open, onClose, post }: EditPostModalProps) {
+export function EditPostModal({ open, onClose, post, currentUserId }: EditPostModalProps) {
   const queryClient = useQueryClient()
   const { user } = useUser()
 
@@ -34,10 +35,10 @@ export function EditPostModal({ open, onClose, post }: EditPostModalProps) {
   const [featured, setFeatured] = useState(false)
   const [isPublished, setIsPublished] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [tagInput, setTagInput] = useState('')
 
-  // Check if this post belongs to the current user
-  const isOwnPost = post ? post._id.includes(user?.id?.slice(0, 8) ?? 'NEVER') 
-    || post._id.startsWith(`post-`) : false
+
+  const isOwnPost = post?.authorId === currentUserId
 
   useEffect(() => {
     if (post) {
@@ -99,6 +100,7 @@ export function EditPostModal({ open, onClose, post }: EditPostModalProps) {
         </div>
 
         {/* If not own post, show read-only notice */}
+
         {!isOwnPost && (
           <div className="mx-5 mt-4 flex items-center gap-2 px-3 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl">
             <Lock size={13} className="text-amber-400 shrink-0" />
@@ -128,6 +130,36 @@ export function EditPostModal({ open, onClose, post }: EditPostModalProps) {
               rows={4}
               className="w-full px-3 py-2.5 bg-[#0d0e14] border border-white/10 rounded-xl text-white/70 text-sm placeholder:text-white/20 outline-none focus:border-indigo-500/40 resize-none disabled:opacity-50"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-white/40 text-[10px] uppercase tracking-widest">Tags</Label>
+            <div className="flex flex-wrap gap-1.5 p-2 bg-[#0d0e14] border border-white/10 rounded-xl min-h-[42px]">
+              {tags.map((tag) => (
+                <span key={tag} className="flex items-center gap-1 px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-xs rounded-md">
+                  {tag}
+                  <button type="button" onClick={() => setTags(tags.filter(t => t !== tag))}
+                    disabled={!isOwnPost} className="text-indigo-400 hover:text-white cursor-pointer">
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+              <input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault()
+                    const t = tagInput.trim()
+                    if (t && !tags.includes(t)) setTags([...tags, t])
+                    setTagInput('')
+                  }
+                }}
+                disabled={!isOwnPost}
+                placeholder={tags.length === 0 ? 'Add tags...' : ''}
+                className="flex-1 min-w-[80px] bg-transparent outline-none text-white/70 text-xs placeholder:text-white/20 disabled:opacity-50"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
