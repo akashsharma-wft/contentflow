@@ -171,7 +171,7 @@ export function ProfileForm() {
             avatarUrl={form.watch('avatarUrl') || null}
             displayName={form.watch('displayName')}
             userId={user?.id ?? ''}
-            onUploadComplete={(url) => { console.log(url);form.setValue('avatarUrl', url)}}
+            onUploadComplete={(url) => form.setValue('avatarUrl', url)}
           />
 
           {/* Profile fields card */}

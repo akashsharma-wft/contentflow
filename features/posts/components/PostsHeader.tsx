@@ -1,10 +1,10 @@
 'use client'
 
 import { RefreshCw, Plus } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { CreatePostModal } from './CreatePostModal'
-import { toast } from 'sonner'
+import Link from 'next/link'
+import { Eye } from 'lucide-react'
 
 interface PostsHeaderProps {
   onSync: () => Promise<unknown>
@@ -12,7 +12,6 @@ interface PostsHeaderProps {
 }
 
 export function PostsHeader({ onSync, isSyncing }: PostsHeaderProps) {
-  const queryClient = useQueryClient()
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
@@ -45,6 +44,13 @@ export function PostsHeader({ onSync, isSyncing }: PostsHeaderProps) {
             <Plus size={13} />
             New Post
           </button>
+          <Link
+            href="/posts/preview?preview=true"
+            className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:text-amber-200 text-sm rounded-lg transition-all cursor-pointer"
+          >
+            <Eye size={13} />
+            Preview
+          </Link>
         </div>
       </div>
       <CreatePostModal open={modalOpen} onClose={() => setModalOpen(false)} />

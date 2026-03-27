@@ -11,8 +11,6 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const posthogPersonalKey = process.env.POSTHOG_PERSONAL_API_KEY
     const projectId = process.env.POSTHOG_PROJECT_ID
-    console.log('PostHog key exists:', !!process.env.POSTHOG_PERSONAL_API_KEY)
-    console.log('Project ID:', process.env.POSTHOG_PROJECT_ID)
 
     // If keys missing, return empty with explanation
     if (!posthogPersonalKey || !projectId) {

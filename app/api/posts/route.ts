@@ -36,25 +36,32 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const countUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=count(*[_type=="post" && (authorId=="${user.id}")])`
+    const countUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}`
     const countResponse = await fetch(countUrl, {
-      headers: { Authorization: `Bearer ${SANITY_TOKEN}` },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SANITY_TOKEN}` },
+          body: JSON.stringify({
+            query: 'count(*[_type=="post" && authorId==$authorId && defined(publishedAt)])',
+            params: { authorId: user.id },
+          }),
     })
+
     const countData = await countResponse.json()
     const currentCount = countData?.result ?? 0
 
     const postLimit = profile?.subscription_tier === 'pro' ? Number.MAX_SAFE_INTEGER : 5
 
-    if (currentCount >= postLimit) {
+    
+    const body = await request.json()
+    const { title, excerpt, tags, featured, publishedAt, coverImageUrl } = body
+
+    if (currentCount >= postLimit && publishedAt) {
       return NextResponse.json({
         error: `Post limit reached. Free plan allows ${postLimit} posts. Upgrade to Pro for unlimited posts.`,
         limitReached: true,
       }, { status: 403 })
     }
-
-    const body = await request.json()
-    const { title, excerpt, tags, featured, publishedAt, coverImageUrl } = body
-
+    
     if (!title?.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
     }

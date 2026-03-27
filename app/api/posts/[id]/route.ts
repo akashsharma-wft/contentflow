@@ -16,52 +16,47 @@ export async function PATCH(
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    // Use POST with query and params in body to avoid unknown query parameter errors
-    const checkUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}`;
-    const checkQuery = '*[_id==$id && authorId==$authorId][0]{_id}';
+
+    const checkUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}`
     const checkResponse = await fetch(checkUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${SANITY_TOKEN}`,
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SANITY_TOKEN}` },
       body: JSON.stringify({
-        query: checkQuery,
+        query: '*[_id==$id && authorId==$authorId][0]{_id}',
         params: { id, authorId: user.id },
       }),
-    });
-    const checkData = await checkResponse.json();
+    })
+    const checkData = await checkResponse.json()
     if (!checkData?.result?._id) {
-      return NextResponse.json({ error: 'You can only edit your own posts' }, { status: 403 });
+      return NextResponse.json({ error: 'You can only edit your own posts' }, { status: 403 })
     }
 
     const body = await request.json()
     const { title, excerpt, tags, featured, publishedAt } = body
 
-    const slug = title.toLowerCase().trim()
-      .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-')
+    // Build set object with only provided fields — supports partial updates
+    // This allows the featured toggle to send ONLY {featured: true/false}
+    const setFields: Record<string, unknown> = {}
 
-    const mutations = [{
-      patch: {
-        id,
-        set: {
-          title,
-          'slug.current': slug,
-          excerpt: excerpt ?? '',
-          featured: featured ?? false,
-          tags: tags ?? [],
-          ...(publishedAt !== undefined && { publishedAt }),
-        }
-      }
-    }]
+    if (title !== undefined) {
+      setFields.title = title
+      setFields['slug.current'] = title
+        .toLowerCase().trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+    }
+    if (excerpt !== undefined)    setFields.excerpt  = excerpt
+    if (tags !== undefined)       setFields.tags     = tags
+    if (featured !== undefined)   setFields.featured = featured
+    if (publishedAt !== undefined) setFields.publishedAt = publishedAt
+
+    const mutations = [{ patch: { id, set: setFields } }]
 
     const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/mutate/${SANITY_DATASET}`
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${SANITY_TOKEN}`,
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SANITY_TOKEN}` },
       body: JSON.stringify({ mutations }),
     })
 

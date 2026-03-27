@@ -1,6 +1,3 @@
-// ─── features/posts/components/CreatePostModal.tsx ───────────────────────────
-// Full create post modal — sends data to /api/posts which writes to Sanity.
-// Responsive — full screen on mobile, centered dialog on desktop.
 'use client'
 
 import { useState, useRef } from 'react'
@@ -10,6 +7,7 @@ import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
 
 interface CreatePostModalProps {
   open: boolean
@@ -37,7 +35,7 @@ function TagInput({ tags, onChange }: TagInputProps) {
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5 p-2 bg-[#0d0e14] border border-white/10 rounded-xl min-h-[42px]">
+    <div className="flex flex-wrap gap-1.5 p-2 bg-[#0d0e14] border border-white/10 rounded-xl min-h-10.5">
       {tags.map((tag) => (
         <span
           key={tag}
@@ -65,7 +63,7 @@ function TagInput({ tags, onChange }: TagInputProps) {
         }}
         onBlur={addTag}
         placeholder={tags.length === 0 ? 'Add tags (press Enter)...' : ''}
-        className="flex-1 min-w-[100px] bg-transparent outline-none text-white/70 text-xs placeholder:text-white/20"
+        className="flex-1 min-w-25 bg-transparent outline-none text-white/70 text-xs placeholder:text-white/20"
       />
     </div>
   )
@@ -344,10 +342,12 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
                 >
                   {coverPreview ? (
                     <>
-                      <img
+                      <Image
                         src={coverPreview}
                         alt="Cover preview"
                         className="w-full h-full object-cover"
+                        height={200}
+                        width={400}
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
                         <p className="text-white text-xs font-medium">Change Image</p>

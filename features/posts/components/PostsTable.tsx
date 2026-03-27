@@ -15,6 +15,7 @@ import { EditPostModal } from './EditPostModal'
 import { useUser } from '@/hooks/useUser'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
+import { DeletePostDialog } from './DeletePostDialog'
 
 interface Post {
   _id: string
@@ -37,33 +38,58 @@ const STATUS_STYLES = {
 }
 
 export function PostsTable({ posts }: PostsTableProps) {
-  const [starredIds, setStarredIds] = useState<Set<string>>(
-    new Set(posts.filter((p) => p.featured).map((p) => p._id))
-  )
   const [editingPost, setEditingPost] = useState<Post | null>(null)
   const { user } = useUser()
   const queryClient = useQueryClient()
+  const [deletingPost, setDeletingPost] = useState<Post | null>(null)
 
-  function toggleStar(id: string) {
-    setStarredIds((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+  // Replace handleDelete to NOT call confirm():
+  async function handleDelete(post: Post) {
+    setDeletingPost(post)
   }
 
-  async function handleDelete(postId: string) {
-    if (!confirm('Delete this post? This cannot be undone.')) return
+  async function handleFeaturedToggle(post: Post, currentFeatured: boolean) {
+    if(user?.id !== post.authorId) {
+      toast.error('You can only edit your own posts')
+      return
+    }
+    queryClient.setQueryData(['posts'], (oldData: Post[] | undefined) => {
+      if (!oldData) return oldData
+      return oldData.map((p) =>
+        p._id === post._id ? { ...p, featured: !currentFeatured } : p
+      )
+    })
 
     try {
-      const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE' })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error)
-      queryClient.invalidateQueries({ queryKey: ['posts'] })
-      toast.success('Post deleted')
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed')
+      const response = await fetch(`/api/posts/${post._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: !currentFeatured }),
+      })
+
+      if (!response.ok) throw new Error('Failed to update featured status')
+
+      // No need to invalidate — optimistic update already applied
+    } catch (err) {
+      // Roll back on error
+      queryClient.setQueryData(['posts'], (oldData: Post[] | undefined) => {
+        if (!oldData) return oldData
+        return oldData.map((p) =>
+          p._id === post._id ? { ...p, featured: currentFeatured } : p
+        )
+      })
+      toast.error('Failed to update featured status — rolled back')
     }
+  }
+
+  async function confirmDelete() {
+    if (!deletingPost) return
+    const response = await fetch(`/api/posts/${deletingPost._id}`, { method: 'DELETE' })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error)
+    queryClient.invalidateQueries({ queryKey: ['posts'] })
+    toast.success('Post deleted')
+    setDeletingPost(null)
   }
 
   return (
@@ -88,13 +114,14 @@ export function PostsTable({ posts }: PostsTableProps) {
           >
             {/* Star toggle */}
             <button
-              onClick={() => toggleStar(post._id)}
-              className="cursor-pointer text-white/20 hover:text-amber-400 transition-colors shrink-0"
-              aria-label="Toggle featured"
+              onClick={() => handleFeaturedToggle(post, post.featured)}
+              className="cursor-pointer transition-all hover:scale-110 active:scale-95"
             >
               <Star
-                size={13}
-                className={starredIds.has(post._id) ? 'fill-amber-400 text-amber-400' : ''}
+                size={15}
+                className={post.featured
+                  ? 'text-amber-400 fill-amber-400'
+                  : 'text-white/20 hover:text-white/50'}
               />
             </button>
 
@@ -158,23 +185,25 @@ export function PostsTable({ posts }: PostsTableProps) {
                     <Eye size={13} /> View post
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    const isOwn = post?.authorId === user?.id
-                    if (isOwn) {
-                      setEditingPost(post)
-                    } else {
-                      window.open(`${process.env.NEXT_PUBLIC_SANITY_STUDIO_URL}/desk/post;${post._id}`, '_blank')
-                    }
-                  }}
-                  className="flex items-center gap-2 cursor-pointer text-sm px-3 py-2"
-                >
-                  <Pencil size={13} />
-                  {post._id.includes('post-') ? 'Edit post' : 'Edit in Studio'}
-                </DropdownMenuItem>
                 {post.authorId === user?.id && (
                   <DropdownMenuItem
-                    onClick={() => handleDelete(post._id)}
+                    onClick={() => {
+                      const isOwn = post?.authorId === user?.id
+                      if (isOwn) {
+                        setEditingPost(post)
+                      } else {
+                        window.open(`${process.env.NEXT_PUBLIC_SANITY_STUDIO_URL}/desk/post;${post._id}`, '_blank')
+                      }
+                    }}
+                    className="flex items-center gap-2 cursor-pointer text-sm px-3 py-2"
+                  >
+                    <Pencil size={13} />
+                    {post._id.includes('post-') ? 'Edit post' : 'Edit in Studio'}
+                  </DropdownMenuItem>
+                )}
+                {post.authorId === user?.id && (
+                  <DropdownMenuItem
+                    onClick={() => handleDelete(post)}
                     className="flex items-center gap-2 cursor-pointer text-sm px-3 py-2 text-red-400 focus:text-red-400"
                   >
                     <Trash2 size={13} />
@@ -227,6 +256,12 @@ export function PostsTable({ posts }: PostsTableProps) {
         onClose={() => setEditingPost(null)}
         post={editingPost}
         currentUserId={user?.id ?? ''}
+      />
+      <DeletePostDialog
+        open={deletingPost !== null}
+        onOpenChange={(open) => { if (!open) setDeletingPost(null) }}
+        postTitle={deletingPost?.title ?? ''}
+        onConfirm={confirmDelete}
       />
     </>
   )
