@@ -10,13 +10,14 @@ import { UsageCard } from '@/features/billing/components/UsageCard'
 import { PlansGrid } from '@/features/billing/components/PlansGrid'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import posthog from 'posthog-js'
+import { usePostHog } from 'posthog-js/react'
 import { Shield } from 'lucide-react'
 
 const PRO_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!
 
 function BillingContent() {
   const router = useRouter()
+  const posthog = usePostHog()
   const { user } = useUser()
   const supabase = createClient()
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false)
@@ -114,12 +115,8 @@ function BillingContent() {
     }
   }
 
-  function handleManage() {
-    toast.info('Stripe Customer Portal — configure portal URL in Stripe dashboard')
-  }
-
   return (
-    <div className="py-6 space-y-5 max-w-[800px]">
+    <div className="py-6 space-y-5 max-w-[9o00px] mx-auto">
       <div>
         <h1 className="text-white text-2xl font-bold tracking-tight">
           Billing &amp; Plans
@@ -139,7 +136,6 @@ function BillingContent() {
         <>
           <CurrentPlanCard
             tier={currentTier}
-            onManage={handleManage}
             onUpgrade={handleUpgrade}
             isLoading={isCheckoutLoading}
           />

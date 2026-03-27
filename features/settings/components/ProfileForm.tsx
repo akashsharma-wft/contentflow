@@ -98,7 +98,8 @@ export function ProfileForm() {
     }
   }, [profile, user, form])
 
-  // Mutation to save profile — required by assignment
+  const posthog = usePostHog()
+
   const { mutate: saveProfile, isPending: isSaving } = useMutation({
     mutationFn: async (data: ProfileFormData) => {
       const { error } = await supabase
@@ -113,10 +114,16 @@ export function ProfileForm() {
         .eq('id', user!.id)
       if (error) throw error
     },
-    onSuccess: () => {
-      // Invalidate profile query so header avatar/name updates immediately
+    onSuccess: (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] })
       toast.success('Profile saved successfully')
+      // Track form submission — required by assignment
+      posthog?.capture('form_submitted', {
+        form: 'settings_profile',
+        fields_changed: Object.keys(data).filter(
+          k => data[k as keyof ProfileFormData] !== ''
+        ).length,
+      })
     },
     onError: (err: Error) => {
       toast.error(err.message || 'Failed to save profile')
@@ -138,12 +145,6 @@ export function ProfileForm() {
       })
     }
   }
-
-  const posthog = usePostHog()
-  posthog?.capture('form_submitted', {
-  form: 'settings_profile',
-  fields_changed: Object.keys(data).length,
-})
 
   // Show skeleton while data is loading — not the form
   if (isLoading || !profile) {

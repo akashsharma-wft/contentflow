@@ -1,11 +1,6 @@
-// ─── app/api/webhooks/stripe/route.ts ─────────────────────────────────────────
-// Stripe calls this endpoint when payment events happen.
-// CRITICAL: Must verify the Stripe signature — without this, anyone could
-// send fake events to upgrade accounts for free. This is a security requirement.
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
-import posthog from 'posthog-js'
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text() // Must be raw text, NOT .json()

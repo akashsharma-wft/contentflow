@@ -5,10 +5,8 @@ import { useEffect } from 'react'
 import { PortableText } from '@portabletext/react'
 import { ArrowLeft, Share2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
-import posthog from 'posthog-js'
-import { toast } from 'sonner'
 import { usePostHog } from 'posthog-js/react'
-
+import { toast } from 'sonner'
 
 interface PostDetailProps {
   post: {
@@ -20,7 +18,12 @@ interface PostDetailProps {
     featured: boolean
     publishedAt: string | null
     coverImage: string | null
-    author: { name: string; avatar: string | null } | null
+    authorId?: string
+    authorName?: string
+    authorEmail?: string
+    authorAvatar?: string | null
+    // keep old author for backwards compat with studio-created posts
+    author?: { name: string; avatar: string | null } | null
   }
   prevSlug?: string | null
   nextSlug?: string | null
@@ -97,21 +100,23 @@ const portableTextComponents = {
 export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
   const posthog = usePostHog()
 
+  // Replace the broken lines:
+  const authorName    = post.authorName ?? post.author?.name ?? 'Unknown'
+  const authorAvatar  = post.authorAvatar ?? post.author?.avatar ?? null
+  const authorInitials = authorName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+
+  // Fix the posthog capture:
   useEffect(() => {
+    if(!posthog) return
     posthog?.capture('post_viewed', {
       slug: post.slug,
       title: post.title,
-      author: post.authorName,
+      author: authorName,
       featured: post.featured,
     })
-  }, [post.slug])
+  }, [post.slug]) // eslint-disable-line react-hooks/exhaustive-deps
 
-
-
-    const authorName    = post.authorName ?? 'Unknown'
-    const authorAvatar  = post.authorAvatar ?? null
-    const authorInitials = authorName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-
+  
   return (
     <div className="max-w-[680px] mx-auto px-5 lg:px-8 py-8">
 

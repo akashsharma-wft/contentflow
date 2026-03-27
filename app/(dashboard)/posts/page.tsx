@@ -43,7 +43,10 @@ export default function PostsPage() {
   )
   const publishedCount = allPosts.filter((p: { publishedAt: string | null }) => !!p.publishedAt).length
   const draftCount     = allPosts.length - publishedCount
-  const featuredPosts  = allPosts.filter((p: { featured: boolean }) => p.featured)
+  const featuredPosts = allPosts.filter(
+    (p: { featured: boolean; publishedAt: string | null }) =>
+      p.featured && !!p.publishedAt
+  )
 
   return (
     <div className="py-6 space-y-5">

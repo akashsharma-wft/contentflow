@@ -12,6 +12,9 @@ import {
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { EditPostModal } from './EditPostModal'
+import { useUser } from '@/hooks/useUser'
+import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface Post {
   _id: string
@@ -38,7 +41,8 @@ export function PostsTable({ posts }: PostsTableProps) {
     new Set(posts.filter((p) => p.featured).map((p) => p._id))
   )
   const [editingPost, setEditingPost] = useState<Post | null>(null)
-
+  const { user } = useUser()
+  const queryClient = useQueryClient()
 
   function toggleStar(id: string) {
     setStarredIds((prev) => {
@@ -46,6 +50,20 @@ export function PostsTable({ posts }: PostsTableProps) {
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
+  }
+
+  async function handleDelete(postId: string) {
+    if (!confirm('Delete this post? This cannot be undone.')) return
+
+    try {
+      const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+      queryClient.invalidateQueries({ queryKey: ['posts'] })
+      toast.success('Post deleted')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Delete failed')
+    }
   }
 
   return (
@@ -142,7 +160,7 @@ export function PostsTable({ posts }: PostsTableProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    const isOwn = post._id.includes('post-') // posts created via our API
+                    const isOwn = post?.authorId === user?.id
                     if (isOwn) {
                       setEditingPost(post)
                     } else {
@@ -154,6 +172,15 @@ export function PostsTable({ posts }: PostsTableProps) {
                   <Pencil size={13} />
                   {post._id.includes('post-') ? 'Edit post' : 'Edit in Studio'}
                 </DropdownMenuItem>
+                {post.authorId === user?.id && (
+                  <DropdownMenuItem
+                    onClick={() => handleDelete(post._id)}
+                    className="flex items-center gap-2 cursor-pointer text-sm px-3 py-2 text-red-400 focus:text-red-400"
+                  >
+                    <Trash2 size={13} />
+                    Delete post
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -199,6 +226,7 @@ export function PostsTable({ posts }: PostsTableProps) {
         open={editingPost !== null}
         onClose={() => setEditingPost(null)}
         post={editingPost}
+        currentUserId={user?.id ?? ''}
       />
     </>
   )

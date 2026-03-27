@@ -36,8 +36,7 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // Count posts by this user using authorId field
-    const countUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=count(*[_type=="post" && authorId=="${user.id}"])`
+    const countUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}?query=count(*[_type=="post" && (authorId=="${user.id}")])`
     const countResponse = await fetch(countUrl, {
       headers: { Authorization: `Bearer ${SANITY_TOKEN}` },
     })
