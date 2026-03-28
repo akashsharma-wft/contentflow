@@ -192,6 +192,7 @@ export default function PostsPage() {
 
       {!isLoading && !isError && searchFiltered.length > 0 && (
         <PostsTable
+          userId={user?.id ?? ''}   // ← add this
           posts={searchFiltered.map((p: {
             _id: string
             title: string
