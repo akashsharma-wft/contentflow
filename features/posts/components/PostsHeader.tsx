@@ -44,13 +44,6 @@ export function PostsHeader({ onSync, isSyncing }: PostsHeaderProps) {
             <Plus size={13} />
             New Post
           </button>
-          <Link
-            href="/posts/preview?preview=true"
-            className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:text-amber-200 text-sm rounded-lg transition-all cursor-pointer"
-          >
-            <Eye size={13} />
-            Preview
-          </Link>
         </div>
       </div>
       <CreatePostModal open={modalOpen} onClose={() => setModalOpen(false)} />

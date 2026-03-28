@@ -10,7 +10,7 @@ export function PostsStatsBar({ total, published, drafts }: PostsStatsBarProps) 
 
   const stats = [
     {
-      label: 'Total Posts',
+      label: 'My Posts',
       value: total.toLocaleString(),
       subColor: 'text-indigo-400',
       icon: FileText,
