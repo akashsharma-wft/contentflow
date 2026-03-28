@@ -13,15 +13,32 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { useState } from 'react'
 import { Search } from 'lucide-react'
 import { toast } from 'sonner'
+import { useUser } from '@/hooks/useUser'
+import { groq } from 'next-sanity'
 
 export default function PostsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isSyncing, setIsSyncing]     = useState(false)
   const debouncedSearch               = useDebounce(searchQuery, 300)
 
+  // Replace the useQuery in posts/page.tsx:
+  const { user } = useUser()
+
   const { data: posts, isLoading, isError, refetch } = useQuery({
-    queryKey: ['posts'],
-    queryFn: () => sanityClient.fetch(ALL_POSTS_QUERY),
+    queryKey: ['posts', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return []
+      // Fetch published posts + current user's own drafts
+      return sanityClient.fetch(groq`
+        *[_type == "post" && (defined(publishedAt) || authorId == $userId)]
+        | order(publishedAt desc) {
+          _id, title, "slug": slug.current, excerpt, publishedAt,
+          featured, tags, authorId, authorName, authorAvatar,
+          "coverImage": coverImage.asset->url
+        }
+      `, { userId: user.id })
+    },
+    enabled: !!user?.id,
     staleTime: 0,
   })
 

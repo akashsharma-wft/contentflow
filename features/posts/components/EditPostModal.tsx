@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { usePostHog } from 'posthog-js/react'
 
 interface EditPostModalProps {
   open: boolean
@@ -27,7 +28,7 @@ interface EditPostModalProps {
 
 export function EditPostModal({ open, onClose, post, currentUserId }: EditPostModalProps) {
   const queryClient = useQueryClient()
-  const { user } = useUser()
+  const posthog = usePostHog()
 
   const [title, setTitle]       = useState('')
   const [excerpt, setExcerpt]   = useState('')
@@ -72,6 +73,10 @@ export function EditPostModal({ open, onClose, post, currentUserId }: EditPostMo
 
       queryClient.invalidateQueries({ queryKey: ['posts'] })
       toast.success('Post updated')
+      posthog?.capture('post_edited', {
+        post_id: post._id,
+        title: title.trim(),
+      })
       onClose()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Update failed')

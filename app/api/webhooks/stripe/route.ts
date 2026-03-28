@@ -55,40 +55,74 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Handle cancellation — use subscription_id to find the user
   if (event.type === 'customer.subscription.deleted') {
     const subscription = event.data.object
 
-    const { error } = await supabase
+    // Find user by subscription_id
+    const { data: profile } = await supabase
       .from('profiles')
-      .update({
-        subscription_tier: 'free',
-        subscription_id: null,
-      })
+      .select('id')
       .eq('subscription_id', subscription.id)
+      .single()
 
-    if (error) {
-      console.error('Failed to downgrade subscription:', error)
+    if (profile?.id) {
+      // Downgrade tier
+      await supabase
+        .from('profiles')
+        .update({ subscription_tier: 'free', subscription_id: null })
+        .eq('id', profile.id)
+
+      // Find all published posts by this user, keep 5 newest published, draft the rest
+      const SANITY_PROJECT_ID = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!
+      const SANITY_DATASET    = process.env.NEXT_PUBLIC_SANITY_DATASET ?? 'production'
+      const SANITY_TOKEN      = process.env.SANITY_API_TOKEN!
+
+      const postsUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}`
+      const postsResponse = await fetch(postsUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SANITY_TOKEN}` },
+        body: JSON.stringify({
+          query: '*[_type=="post" && authorId==$userId && defined(publishedAt)] | order(publishedAt desc) {_id}',
+          params: { userId: profile.id },
+        }),
+      })
+      const postsData = await postsResponse.json()
+      const publishedPosts: { _id: string }[] = postsData?.result ?? []
+
+      // Posts beyond the 5 most recent get unpublished (publishedAt removed = draft)
+      const postsToUnpublish = publishedPosts.slice(5)
+
+      if (postsToUnpublish.length > 0) {
+        const mutations = postsToUnpublish.map((p) => ({
+          patch: { id: p._id, unset: ['publishedAt'] }
+        }))
+
+        await fetch(
+          `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/mutate/${SANITY_DATASET}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SANITY_TOKEN}` },
+            body: JSON.stringify({ mutations }),
+          }
+        )
+
+        console.log(`Downgraded user ${profile.id}: unpublished ${postsToUnpublish.length} posts`)
+      }
     }
   }
 
-  // Handle subscription cancelled
-  if (event.type === 'customer.subscription.deleted') {
+  if (event.type === 'customer.subscription.updated') {
     const subscription = event.data.object
-    const customerId = subscription.customer as string
-
-    // Find user by Stripe customer ID
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('stripe_customer_id', customerId)
-      .limit(1)
-
-    if (profiles?.[0]) {
+    
+    // If cancel_at_period_end was just set to true, record it but don't downgrade yet
+    // The actual downgrade happens on customer.subscription.deleted
+    if (subscription.cancel_at_period_end) {
+      console.log('Subscription set to cancel at period end:', subscription.id)
+      // Optionally: show a "cancelling" state in UI
       await supabase
         .from('profiles')
-        .update({ subscription_tier: 'free' })
-        .eq('id', profiles[0].id)
+        .update({ subscription_id: subscription.id })
+        .eq('subscription_id', subscription.id)
     }
   }
 

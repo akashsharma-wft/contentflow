@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
+import { usePostHog } from 'posthog-js/react'
 
 interface CreatePostModalProps {
   open: boolean
@@ -72,6 +73,7 @@ function TagInput({ tags, onChange }: TagInputProps) {
 export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
   const queryClient = useQueryClient()
   const coverImageRef = useRef<HTMLInputElement>(null)
+  const posthog = usePostHog()
 
   const [title, setTitle]           = useState('')
   const [excerpt, setExcerpt]       = useState('')
@@ -180,6 +182,13 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
       // Invalidate posts cache so list refetches
       queryClient.invalidateQueries({ queryKey: ['posts'] })
       toast.success('Post created successfully!')
+      posthog?.capture('post_created', {
+      title: title.trim(),
+      featured,
+      published: !!publishNow,
+      has_cover: !!coverFile,
+      tag_count: tags.length,
+    })
       handleClose()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to create post')
