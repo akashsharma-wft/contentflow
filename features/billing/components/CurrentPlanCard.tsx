@@ -1,18 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { useUser } from '@/hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { CancelSubscriptionDialog } from './CancelSubscriptionDialog'
 
 interface CurrentPlanCardProps {
   tier: 'free' | 'pro'
+  isCancelling?: boolean
+  cancelAt?: string | null
   onUpgrade: () => void
   isLoading: boolean
 }
 
-export function CurrentPlanCard({ tier, onUpgrade, isLoading }: CurrentPlanCardProps) {
+export function CurrentPlanCard({
+  tier, isCancelling, cancelAt, onUpgrade, isLoading
+}: CurrentPlanCardProps) {
   const isPro = tier === 'pro'
   const { user } = useUser()
   const queryClient = useQueryClient()
@@ -36,7 +40,6 @@ export function CurrentPlanCard({ tier, onUpgrade, isLoading }: CurrentPlanCardP
     const response = await fetch('/api/stripe/cancel', { method: 'POST' })
     const data = await response.json()
     if (!response.ok) throw new Error(data.error)
-
     queryClient.invalidateQueries({ queryKey: ['profile', user?.id] })
     toast.success('Subscription cancelled. You keep Pro access until the billing period ends.')
   }
@@ -51,11 +54,13 @@ export function CurrentPlanCard({ tier, onUpgrade, isLoading }: CurrentPlanCardP
           <div className="flex items-center gap-3">
             <h2 className="text-white text-2xl font-bold">{isPro ? 'Pro' : 'Free'}</h2>
             <span className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded border ${
-              isPro
+              isCancelling
+                ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                : isPro
                 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
                 : 'text-white/40 bg-white/5 border-white/10'
             }`}>
-              {isPro ? 'Active' : 'Free Tier'}
+              {isCancelling ? 'Cancelling' : isPro ? 'Active' : 'Free Tier'}
             </span>
           </div>
 
@@ -65,18 +70,19 @@ export function CurrentPlanCard({ tier, onUpgrade, isLoading }: CurrentPlanCardP
                 <button
                   onClick={handleManageSubscription}
                   disabled={isLoading}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/60 hover:text-white text-sm rounded-lg transition-all cursor-pointer"
+                  className="px-4 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/60 hover:text-white text-sm rounded-lg transition-all cursor-pointer disabled:opacity-50"
                 >
-                  Manage subscription
+                  {isCancelling ? 'Reactivate' : 'Manage subscription'}
                 </button>
-                {/* Downgrade = cancel (same effect) */}
-                <button
-                  onClick={() => setShowCancelDialog(true)}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-transparent border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm rounded-lg transition-all cursor-pointer disabled:opacity-50"
-                >
-                  Cancel
-                </button>
+                {!isCancelling && (
+                  <button
+                    onClick={() => setShowCancelDialog(true)}
+                    disabled={isLoading}
+                    className="px-4 py-2 bg-transparent border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm rounded-lg transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                )}
               </>
             ) : (
               <button
@@ -89,6 +95,18 @@ export function CurrentPlanCard({ tier, onUpgrade, isLoading }: CurrentPlanCardP
             )}
           </div>
         </div>
+
+        {isCancelling && cancelAt && (
+          <div className="mt-4 flex items-start gap-2 px-3 py-2.5 bg-amber-500/8 border border-amber-500/15 rounded-xl">
+            <span className="text-amber-400 text-xs mt-0.5">⚠</span>
+            <p className="text-amber-300/80 text-xs leading-relaxed">
+              Your Pro access continues until{' '}
+              <span className="font-semibold text-amber-300">{cancelAt}</span>.
+              After that, your account reverts to Free and excess posts will be moved to drafts.
+              Click <span className="font-semibold">Reactivate</span> to continue Pro.
+            </p>
+          </div>
+        )}
       </div>
 
       <CancelSubscriptionDialog

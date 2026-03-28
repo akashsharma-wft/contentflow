@@ -40,11 +40,6 @@ export async function PATCH(
 
     if (title !== undefined) {
       setFields.title = title
-      setFields['slug.current'] = title
-        .toLowerCase().trim()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
     }
     if (excerpt !== undefined)    setFields.excerpt  = excerpt
     if (tags !== undefined)       setFields.tags     = tags

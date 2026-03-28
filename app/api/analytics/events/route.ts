@@ -1,85 +1,104 @@
 // ─── app/api/analytics/events/route.ts ───────────────────────────────────────
-// Fetches real events from PostHog's API using the personal API key.
-// Server-side only — personal API key must never go to the client.
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const posthogPersonalKey = process.env.POSTHOG_PERSONAL_API_KEY
-    const projectId = process.env.POSTHOG_PROJECT_ID
 
-    // If keys missing, return empty with explanation
+    const posthogPersonalKey = process.env.POSTHOG_PERSONAL_API_KEY
+    const projectId          = process.env.POSTHOG_PROJECT_ID
+
     if (!posthogPersonalKey || !projectId) {
-      console.warn('PostHog personal API key or project ID not configured')
       return NextResponse.json({
-        events: [],
-        eventsToday: 0,
-        uniqueUsers: 0,
-        avgSession: '—',
-        error: 'POSTHOG_PERSONAL_API_KEY or POSTHOG_PROJECT_ID not set in environment',
+        events: [], eventsToday: 0, uniqueUsers: 0, avgSession: '—',
       })
     }
 
     const host = 'https://us.posthog.com'
-    
-    const eventsResponse = await fetch(
-      `${host}/api/projects/${projectId}/events/?limit=50&order=-timestamp`,
-      {
-        headers: {
-          Authorization: `Bearer ${posthogPersonalKey}`,
-          'Content-Type': 'application/json',
-        },
-        // Don't cache this — always fresh
-        cache: 'no-store',
-      }
-    )
 
-    if (!eventsResponse.ok) {
-      const errorText = await eventsResponse.text()
-      console.error('PostHog API error:', eventsResponse.status, errorText)
+    const [eventsRes, sessionRes] = await Promise.all([
+      fetch(
+        `${host}/api/projects/${projectId}/events/?limit=50&order=-timestamp`,
+        {
+          headers: { Authorization: `Bearer ${posthogPersonalKey}` },
+          cache: 'no-store',
+        }
+      ),
+      // Get session durations for avg session calculation
+      fetch(
+        `${host}/api/projects/${projectId}/insights/session/?date_from=-7d`,
+        {
+          headers: { Authorization: `Bearer ${posthogPersonalKey}` },
+          cache: 'no-store',
+        }
+      ),
+    ])
+
+    if (!eventsRes.ok) {
       return NextResponse.json({ events: [], eventsToday: 0, uniqueUsers: 0, avgSession: '—' })
     }
 
-    const data = await eventsResponse.json()
-    const allEvents = data.results ?? []
+    const data       = await eventsRes.json()
+    const allEvents: Array<{
+      timestamp: string
+      event: string
+      properties: Record<string, unknown>
+      distinct_id: string
+    }> = data.results ?? []
 
-    // Sort custom events first, autocapture last
-    const sortedEvents = [...allEvents].sort((a: { event: string }, b: { event: string }) => {
-      const customA = !a.event.startsWith('$')
-      const customB = !b.event.startsWith('$')
-      if (customA && !customB) return -1
-      if (!customA && customB) return 1
-      return 0
-    })
-
-    const today = new Date().toDateString()
+    // Compute eventsToday from actual timestamps
+    const todayStr   = new Date().toDateString()
     const eventsToday = allEvents.filter(
-      (e: { timestamp: string }) => new Date(e.timestamp).toDateString() === today
+      (e) => new Date(e.timestamp).toDateString() === todayStr
     ).length
 
-    const uniqueUsers = new Set(
-      allEvents.map((e: { distinct_id: string }) => e.distinct_id)
-    ).size
+    // Unique users from all fetched events
+    const uniqueUsers = new Set(allEvents.map((e) => e.distinct_id)).size
 
+    // Avg session from PostHog insights if available
+    let avgSession = '—'
+    if (sessionRes.ok) {
+      try {
+        const sessionData = await sessionRes.json()
+        const avgSeconds  = sessionData?.result?.average_session_duration_seconds
+        if (typeof avgSeconds === 'number' && avgSeconds > 0) {
+          const mins = Math.floor(avgSeconds / 60)
+          const secs = Math.floor(avgSeconds % 60)
+          avgSession = `${mins}m ${secs}s`
+        }
+      } catch {
+        // session insights may not be available
+      }
+    }
+
+    // Custom events list for priority sorting
+    const CUSTOM_EVENTS = new Set([
+      'post_viewed', 'post_created', 'post_edited', 'post_deleted',
+      'upgrade_intent', 'upgrade_completed', 'form_submitted', 'login',
+    ])
+
+    // Sort: custom events first (by timestamp desc), then system events (by timestamp desc)
+    const customEvents = allEvents
+      .filter((e) => CUSTOM_EVENTS.has(e.event))
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+    const systemEvents = allEvents
+      .filter((e) => !CUSTOM_EVENTS.has(e.event))
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+
+    // Return both sorted versions — client chooses which to show
     return NextResponse.json({
-      events: sortedEvents.map((e: {
-        timestamp: string
-        event: string
-        properties: Record<string, unknown>
-        distinct_id: string
-      }) => ({
-        timestamp: e.timestamp,
-        event: e.event,
-        properties: e.properties,
-        distinct_id: e.distinct_id,
-      })),
+      events: allEvents.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      ),
+      customEvents,
+      systemEvents,
       eventsToday,
       uniqueUsers,
-      avgSession: '—',
+      avgSession,
     })
   } catch (err) {
     console.error('Analytics route error:', err)
