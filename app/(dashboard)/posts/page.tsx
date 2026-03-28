@@ -87,6 +87,7 @@ export default function PostsPage() {
 
   const publishedCount = rawPosts.filter((p: { publishedAt: string | null }) => !!p.publishedAt).length
   const draftCount     = myDrafts.length
+  const myPostsCount   = myDrafts.length + publishedCount
 
   const featuredPosts = visiblePosts.filter(
     (p: { featured: boolean; publishedAt: string | null }) =>
@@ -131,7 +132,7 @@ export default function PostsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        <div className="flex items-center gap-5 shrink-0 flex-wrap">
           {/* Preview toggle — only shown when user has own drafts */}
           {draftCount > 0 && (
             <button
@@ -173,7 +174,7 @@ export default function PostsPage() {
         </div>
       ) : (
         <PostsStatsBar
-          total={rawPosts.length}
+          total={myPostsCount}
           published={publishedCount}
           drafts={draftCount}
         />

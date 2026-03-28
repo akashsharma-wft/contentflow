@@ -24,7 +24,7 @@ export function DashboardStats() {
 
   const stats = [
     {
-      label: 'Total Posts',
+      label: 'My Posts',
       value: postsLoading ? null : postCount.toString(),
       sub: postsLoading ? '' : `${publishedCount} published`,
       icon: FileText,

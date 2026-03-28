@@ -80,13 +80,6 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
       const response = await fetch('/api/analytics/events')
       if (response.ok) {
         const data = await response.json()
-        // const sortedEvents = [...(data.events ?? [])].sort((a: LiveEvent, b: LiveEvent) => {
-        //   const isCustomA = !a.event.startsWith('$')
-        //   const isCustomB = !b.event.startsWith('$')
-        //   if (isCustomA && !isCustomB) return -1
-        //   if (!isCustomA && isCustomB) return 1
-        //   return 0
-        // })
         setEvents(data.events ?? [])
         setStats({
           eventsToday: data.eventsToday ?? 0,
@@ -108,14 +101,6 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
         const response = await fetch('/api/analytics/events')
         if (response.ok) {
           const data = await response.json()
-          // // Filter to show meaningful events first, autocapture at bottom
-          // const sortedEvents = [...(data.events ?? [])].sort((a: LiveEvent, b: LiveEvent) => {
-          //   const isCustomA = !a.event.startsWith('$')
-          //   const isCustomB = !b.event.startsWith('$')
-          //   if (isCustomA && !isCustomB) return -1
-          //   if (!isCustomA && isCustomB) return 1
-          //   return 0
-          // })
           setEvents(data.events ?? [])
           setStats({
             eventsToday: data.eventsToday ?? 0,
@@ -146,9 +131,6 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
   const displayedEvents = sortMode === 'important'
   ? [...customEvents, ...systemEvents]  // custom first, then system
   : events  // chronological
-  console.log('Displayed events:', displayedEvents)
-  console.log('Custom events:', customEvents)
-  console.log('System events:', systemEvents)
 
   return (
     <div className="py-6 space-y-5 max-w-[900px]">
@@ -162,7 +144,7 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
       {/* Real stats — 0 until data loads */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Events Today', value: isLoading ? '—' : stats.eventsToday.toString() },
+          { label: 'Events Today', value: isLoading ? '—' : `${stats.eventsToday.toString()}+` },
           { label: 'Unique Users', value: isLoading ? '—' : stats.uniqueUsers.toString() },
           { label: 'Avg. Session', value: isLoading ? '—' : stats.avgSession },
         ].map(({ label, value }) => (
