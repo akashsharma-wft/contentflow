@@ -181,6 +181,8 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
 
       // Invalidate posts cache so list refetches
       queryClient.invalidateQueries({ queryKey: ['posts'] })
+      queryClient.invalidateQueries({ queryKey: ['posts-all'] })
+      queryClient.invalidateQueries({ queryKey: ['my-post-stats'] })
       toast.success('Post created successfully!')
       posthog?.capture('post_created', {
       title: title.trim(),
@@ -248,15 +250,14 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
                 />
               </div>
 
-              {/* Slug — auto-generated, read only */}
               <div className="space-y-1.5">
                 <Label className="text-white/40 text-[10px] uppercase tracking-widest font-medium">
                   Slug
                 </Label>
                 <div className="flex items-center gap-2 px-3 py-2.5 bg-[#0d0e14] border border-white/5 rounded-xl">
-                  <span className="text-white/20 text-xs font-mono shrink-0">contentflow.io/posts/</span>
-                  <span className="text-white/50 text-xs font-mono truncate">
-                    {slug || 'auto-generated-from-title'}
+                  <span className="text-white/20 text-xs font-mono shrink-0">Auto-generated</span>
+                  <span className="text-white/30 text-xs font-mono truncate">
+                    Based on post ID
                   </span>
                 </div>
               </div>

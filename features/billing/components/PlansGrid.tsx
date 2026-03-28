@@ -16,14 +16,17 @@ interface PlansGridProps {
   currentTier: 'free' | 'pro'
   proPriceId: string
   onUpgrade: () => void
+  onDowngrade: () => void   // ← added
   isLoading: boolean
+  isCancelling?: boolean    // ← added to show correct button state
 }
 
-const FREE_FEATURES  = ['5 Published Posts', '1,000 API calls', 'Community Support']
-const PRO_FEATURES   = ['Unlimited Posts', '10,000 API calls', 'Priority Email Support', 'Team Collaboration (5 seats)']
+const FREE_FEATURES = ['5 Published Posts', '1,000 API calls', 'Community Support']
+const PRO_FEATURES  = ['Unlimited Posts', '10,000 API calls', 'Priority Email Support', 'Team Collaboration (5 seats)']
 
-export function PlansGrid({ currentTier, proPriceId, onUpgrade, isLoading }: PlansGridProps) {
-  // Fetch real price from Stripe — no hardcoded values
+export function PlansGrid({
+  currentTier, proPriceId, onUpgrade, onDowngrade, isLoading, isCancelling
+}: PlansGridProps) {
   const { data: prices } = useQuery<StripePrice[]>({
     queryKey: ['stripe-prices'],
     queryFn: async () => {
@@ -31,7 +34,7 @@ export function PlansGrid({ currentTier, proPriceId, onUpgrade, isLoading }: Pla
       if (!res.ok) throw new Error('Failed to fetch prices')
       return res.json()
     },
-    staleTime: 5 * 60 * 1000, // cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 
   const proPrice = prices?.find((p) => p.id === proPriceId)
@@ -67,19 +70,24 @@ export function PlansGrid({ currentTier, proPriceId, onUpgrade, isLoading }: Pla
             ))}
           </ul>
           <button
-            disabled={currentTier === 'free' || isLoading}
+            onClick={currentTier === 'pro' && !isCancelling ? onDowngrade : undefined}
+            disabled={isLoading || currentTier === 'free' || isCancelling}
             className={cn(
               'w-full py-2.5 rounded-xl text-sm font-semibold transition-all',
-              currentTier === 'free'
+              currentTier === 'free' || isCancelling
                 ? 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
-                : 'bg-white/5 border border-white/15 text-white/60 hover:text-white hover:bg-white/8 cursor-pointer'
+                : 'bg-white/5 border border-white/15 text-white/60 hover:text-white hover:bg-white/8 cursor-pointer disabled:opacity-50'
             )}
           >
-            {currentTier === 'free' ? 'Current Plan' : 'Downgrade'}
+            {currentTier === 'free'
+              ? 'Current Plan'
+              : isCancelling
+              ? 'Downgrade scheduled'
+              : 'Downgrade'}
           </button>
         </div>
 
-        {/* Pro plan — price from Stripe */}
+        {/* Pro plan */}
         <div className={cn(
           'bg-[#13141c] border rounded-2xl p-5 space-y-4 relative',
           currentTier === 'pro' ? 'border-indigo-500/40' : 'border-indigo-500/20'
@@ -99,7 +107,6 @@ export function PlansGrid({ currentTier, proPriceId, onUpgrade, isLoading }: Pla
             </p>
           </div>
 
-          {/* Real price from Stripe — shows loader while fetching */}
           <div className="flex items-baseline gap-1">
             {proPrice ? (
               <>
@@ -122,7 +129,7 @@ export function PlansGrid({ currentTier, proPriceId, onUpgrade, isLoading }: Pla
 
           <button
             onClick={currentTier !== 'pro' ? onUpgrade : undefined}
-            disabled={isLoading || !proPrice}
+            disabled={isLoading || !proPrice || currentTier === 'pro'}
             className={cn(
               'w-full py-2.5 rounded-xl text-sm font-semibold transition-all',
               currentTier === 'pro'

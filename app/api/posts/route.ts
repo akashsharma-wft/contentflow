@@ -66,33 +66,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
     }
 
-    // Generate base slug from title
-    const baseSlug = title
-      .toLowerCase().trim()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '') // trim leading/trailing dashes
-
-    // Check if this slug already exists in Sanity
-    const slugCheckUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/query/${SANITY_DATASET}`
-    const slugCheckResponse = await fetch(slugCheckUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SANITY_TOKEN}` },
-      body: JSON.stringify({
-        query: 'count(*[_type=="post" && slug.current==$slug])',
-        params: { slug: baseSlug },
-      }),
-    })
-    const slugCheckData = await slugCheckResponse.json()
-    const slugExists = (slugCheckData?.result ?? 0) > 0
-
-    // If slug exists, append a short unique suffix
-    const slug = slugExists
-      ? `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
-      : baseSlug
-
     const postId = `post-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const slug = postId
 
     const postDocument: Record<string, unknown> = {
       _type: 'post',

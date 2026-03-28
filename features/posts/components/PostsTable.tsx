@@ -50,46 +50,47 @@ export function PostsTable({ posts }: PostsTableProps) {
     setDeletingPost(post)
   }
 
-  async function handleFeaturedToggle(post: Post, currentFeatured: boolean) {
-    if(user?.id !== post.authorId) {
-      toast.error('You can only edit your own posts')
-      return
-    }
-    queryClient.setQueryData(['posts'], (oldData: Post[] | undefined) => {
+  async function handleFeaturedToggle(postId: string, currentFeatured: boolean) {
+    // Target the correct query key
+    queryClient.setQueryData(['posts-all'], (oldData: Post[] | undefined) => {
       if (!oldData) return oldData
       return oldData.map((p) =>
-        p._id === post._id ? { ...p, featured: !currentFeatured } : p
+        p._id === postId ? { ...p, featured: !currentFeatured } : p
       )
     })
 
     try {
-      const response = await fetch(`/api/posts/${post._id}`, {
+      const response = await fetch(`/api/posts/${postId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ featured: !currentFeatured }),
       })
 
-      if (!response.ok) throw new Error('Failed to update featured status')
-
-      // No need to invalidate — optimistic update already applied
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error ?? 'Failed to update featured status')
+      }
     } catch (err) {
-      // Roll back on error
-      queryClient.setQueryData(['posts'], (oldData: Post[] | undefined) => {
+      // Roll back
+      queryClient.setQueryData(['posts-all'], (oldData: Post[] | undefined) => {
         if (!oldData) return oldData
         return oldData.map((p) =>
-          p._id === post._id ? { ...p, featured: currentFeatured } : p
+          p._id === postId ? { ...p, featured: currentFeatured } : p
         )
       })
-      toast.error('Failed to update featured status — rolled back')
+      toast.error('Failed to update — rolled back')
     }
   }
 
+  // Also update delete to invalidate the right key:
   async function confirmDelete() {
     if (!deletingPost) return
     const response = await fetch(`/api/posts/${deletingPost._id}`, { method: 'DELETE' })
     const data = await response.json()
     if (!response.ok) throw new Error(data.error)
-    queryClient.invalidateQueries({ queryKey: ['posts'] })
+    queryClient.invalidateQueries({ queryKey: ['posts-all'] })
+    // Also update my-post-stats
+    queryClient.invalidateQueries({ queryKey: ['my-post-stats'] })
     toast.success('Post deleted')
     posthog?.capture('post_deleted', {
       post_id: deletingPost._id,
@@ -97,6 +98,7 @@ export function PostsTable({ posts }: PostsTableProps) {
     })
     setDeletingPost(null)
   }
+
 
   return (
     <>
@@ -120,7 +122,7 @@ export function PostsTable({ posts }: PostsTableProps) {
           >
             {/* Star toggle */}
             <button
-              onClick={() => handleFeaturedToggle(post, post.featured)}
+              onClick={() => handleFeaturedToggle(post._id, post.featured)}
               className="cursor-pointer transition-all hover:scale-110 active:scale-95"
             >
               <Star

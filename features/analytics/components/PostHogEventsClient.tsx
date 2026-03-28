@@ -21,6 +21,8 @@ interface LiveEvent {
   distinct_id: string
 }
 
+type SortMode = 'time' | 'important'
+
 const EVENT_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   // Custom events — high priority, shown first
   post_viewed:        { bg: 'bg-indigo-500/15',  text: 'text-indigo-300',  label: 'post_viewed' },
@@ -66,6 +68,9 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [featureFlagEnabled, setFeatureFlagEnabled] = useState(serverFlags.showFeaturedBanner)
   const [stats, setStats] = useState({ eventsToday: 0, uniqueUsers: 0, avgSession: '—' })
+  const [sortMode, setSortMode] = useState<SortMode>('time')
+  const [customEvents, setCustomEvents] = useState<LiveEvent[]>([])
+  const [systemEvents, setSystemEvents] = useState<LiveEvent[]>([])
 
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -75,19 +80,21 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
       const response = await fetch('/api/analytics/events')
       if (response.ok) {
         const data = await response.json()
-        const sortedEvents = [...(data.events ?? [])].sort((a: LiveEvent, b: LiveEvent) => {
-          const isCustomA = !a.event.startsWith('$')
-          const isCustomB = !b.event.startsWith('$')
-          if (isCustomA && !isCustomB) return -1
-          if (!isCustomA && isCustomB) return 1
-          return 0
-        })
-        setEvents(sortedEvents)
+        // const sortedEvents = [...(data.events ?? [])].sort((a: LiveEvent, b: LiveEvent) => {
+        //   const isCustomA = !a.event.startsWith('$')
+        //   const isCustomB = !b.event.startsWith('$')
+        //   if (isCustomA && !isCustomB) return -1
+        //   if (!isCustomA && isCustomB) return 1
+        //   return 0
+        // })
+        setEvents(data.events ?? [])
         setStats({
           eventsToday: data.eventsToday ?? 0,
           uniqueUsers: data.uniqueUsers ?? 0,
           avgSession: data.avgSession ?? '—',
         })
+        setCustomEvents(data.customEvents ?? [])
+        setSystemEvents(data.systemEvents ?? [])
       }
     } finally {
       setIsRefreshing(false)
@@ -101,26 +108,22 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
         const response = await fetch('/api/analytics/events')
         if (response.ok) {
           const data = await response.json()
-          // Filter to show meaningful events first, autocapture at bottom
-          const sortedEvents = [...(data.events ?? [])].sort((a: LiveEvent, b: LiveEvent) => {
-            const isCustomA = !a.event.startsWith('$')
-            const isCustomB = !b.event.startsWith('$')
-            if (isCustomA && !isCustomB) return -1
-            if (!isCustomA && isCustomB) return 1
-            return 0
-          })
-          setEvents(sortedEvents)
+          // // Filter to show meaningful events first, autocapture at bottom
+          // const sortedEvents = [...(data.events ?? [])].sort((a: LiveEvent, b: LiveEvent) => {
+          //   const isCustomA = !a.event.startsWith('$')
+          //   const isCustomB = !b.event.startsWith('$')
+          //   if (isCustomA && !isCustomB) return -1
+          //   if (!isCustomA && isCustomB) return 1
+          //   return 0
+          // })
+          setEvents(data.events ?? [])
           setStats({
             eventsToday: data.eventsToday ?? 0,
             uniqueUsers: data.uniqueUsers ?? 0,
             avgSession: data.avgSession ?? '—',
           })
-          setEvents(sortedEvents)
-          setStats({
-            eventsToday: data.eventsToday ?? 0,
-            uniqueUsers: data.uniqueUsers ?? 0,
-            avgSession: data.avgSession ?? '—',
-          })
+          setCustomEvents(data.customEvents ?? [])
+          setSystemEvents(data.systemEvents ?? [])
         }
       } catch {
         // PostHog API not configured — show empty state
@@ -139,6 +142,13 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
       setFeatureFlagEnabled(flag ?? serverFlags.showFeaturedBanner)
     }
   }, [posthog, user?.id, serverFlags.showFeaturedBanner])
+
+  const displayedEvents = sortMode === 'important'
+  ? [...customEvents, ...systemEvents]  // custom first, then system
+  : events  // chronological
+  console.log('Displayed events:', displayedEvents)
+  console.log('Custom events:', customEvents)
+  console.log('System events:', systemEvents)
 
   return (
     <div className="py-6 space-y-5 max-w-[900px]">
@@ -172,11 +182,17 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
             <h3 className="text-white text-sm font-semibold">Live event stream</h3>
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSortMode(sortMode === 'time' ? 'important' : 'time')}
+              className="text-white/30 hover:text-white/60 text-[10px] uppercase tracking-widest font-mono cursor-pointer transition-colors px-2 py-1 rounded border border-white/10 hover:border-white/20"
+            >
+              {sortMode === 'time' ? '⏱ Time' : '★ Priority'}
+            </button>
             <button
               onClick={refreshEvents}
               disabled={isRefreshing}
-              className="text-white/30 hover:text-white/60 text-[10px] uppercase tracking-widest font-mono cursor-pointer transition-colors disabled:opacity-50"
+              className="text-white/30 hover:text-white/60 text-[10px] uppercase tracking-widest font-mono cursor-pointer transition-colors px-2 py-1 rounded border border-white/10 hover:border-white/20"
             >
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
@@ -201,7 +217,7 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
           </div>
         ) : (
           <div className="divide-y divide-white/5">
-            {events.map((event, i) => {
+            {displayedEvents.map((event, i) => {
               const style = getEventStyle(event.event)
               return (
                 <div key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors group">

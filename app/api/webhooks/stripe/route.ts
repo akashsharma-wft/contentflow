@@ -113,15 +113,20 @@ export async function POST(request: NextRequest) {
 
   if (event.type === 'customer.subscription.updated') {
     const subscription = event.data.object
-    
-    // If cancel_at_period_end was just set to true, record it but don't downgrade yet
-    // The actual downgrade happens on customer.subscription.deleted
-    if (subscription.cancel_at_period_end) {
-      console.log('Subscription set to cancel at period end:', subscription.id)
-      // Optionally: show a "cancelling" state in UI
+
+    if (subscription.cancel_at_period_end && subscription.cancel_at) {
+      // User has cancelled — mark the cancellation date
       await supabase
         .from('profiles')
-        .update({ subscription_id: subscription.id })
+        .update({
+          subscription_cancel_at: new Date(subscription.cancel_at * 1000).toISOString(),
+        })
+        .eq('subscription_id', subscription.id)
+    } else if (!subscription.cancel_at_period_end) {
+      // User reactivated (clicked "Don't cancel")
+      await supabase
+        .from('profiles')
+        .update({ subscription_cancel_at: null })
         .eq('subscription_id', subscription.id)
     }
   }
