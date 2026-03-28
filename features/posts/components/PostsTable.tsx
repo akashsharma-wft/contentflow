@@ -16,6 +16,7 @@ import { useUser } from '@/hooks/useUser'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { DeletePostDialog } from './DeletePostDialog'
+import { usePostHog } from 'posthog-js/react'
 
 interface Post {
   _id: string
@@ -42,6 +43,7 @@ export function PostsTable({ posts }: PostsTableProps) {
   const { user } = useUser()
   const queryClient = useQueryClient()
   const [deletingPost, setDeletingPost] = useState<Post | null>(null)
+  const posthog = usePostHog()
 
   // Replace handleDelete to NOT call confirm():
   async function handleDelete(post: Post) {
@@ -89,6 +91,10 @@ export function PostsTable({ posts }: PostsTableProps) {
     if (!response.ok) throw new Error(data.error)
     queryClient.invalidateQueries({ queryKey: ['posts'] })
     toast.success('Post deleted')
+    posthog?.capture('post_deleted', {
+      post_id: deletingPost._id,
+      title: deletingPost.title,
+    })
     setDeletingPost(null)
   }
 

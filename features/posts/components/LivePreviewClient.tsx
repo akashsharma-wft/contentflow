@@ -19,6 +19,7 @@ interface Post {
 interface LivePreviewClientProps {
   posts: Post[]
   isPreview: boolean
+  userId: string  // add this
 }
 
 export function LivePreviewClient({ posts, isPreview }: LivePreviewClientProps) {

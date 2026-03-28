@@ -22,16 +22,22 @@ interface LiveEvent {
 }
 
 const EVENT_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  // Custom events — high priority, shown first
   post_viewed:        { bg: 'bg-indigo-500/15',  text: 'text-indigo-300',  label: 'post_viewed' },
+  post_created:       { bg: 'bg-emerald-500/15', text: 'text-emerald-300', label: 'post_created' },
+  post_edited:        { bg: 'bg-blue-500/15',    text: 'text-blue-300',    label: 'post_edited' },
+  post_deleted:       { bg: 'bg-red-500/15',     text: 'text-red-300',     label: 'post_deleted' },
   upgrade_intent:     { bg: 'bg-amber-500/15',   text: 'text-amber-300',   label: 'upgrade_intent' },
   upgrade_completed:  { bg: 'bg-purple-500/15',  text: 'text-purple-300',  label: 'upgrade_completed' },
   form_submitted:     { bg: 'bg-emerald-500/15', text: 'text-emerald-300', label: 'form_submitted' },
   login:              { bg: 'bg-emerald-500/15', text: 'text-emerald-300', label: 'login' },
-  '$pageview':        { bg: 'bg-white/5',        text: 'text-white/40',    label: '$pageview' },
   page_view:          { bg: 'bg-white/5',        text: 'text-white/40',    label: 'page_view' },
-  '$autocapture':     { bg: 'bg-white/5',        text: 'text-white/25',    label: '$autocapture' },
-  '$web_vitals':      { bg: 'bg-blue-500/15',    text: 'text-blue-300',    label: '$web_vitals' },
-  '$set':             { bg: 'bg-white/5',        text: 'text-white/25',    label: '$set' },
+  // Posthog system events — shown last
+  '$pageview':        { bg: 'bg-white/5',        text: 'text-white/35',    label: '$pageview' },
+  '$feature_flag_called': { bg: 'bg-indigo-500/8', text: 'text-indigo-400/60', label: '$feature_flag_called' },
+  '$autocapture':     { bg: 'bg-white/[0.03]',   text: 'text-white/20',    label: '$autocapture' },
+  '$web_vitals':      { bg: 'bg-blue-500/8',     text: 'text-blue-400/50', label: '$web_vitals' },
+  '$set':             { bg: 'bg-white/[0.03]',   text: 'text-white/20',    label: '$set' },
 }
 
 function getEventStyle(event: string) {
