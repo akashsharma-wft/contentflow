@@ -74,20 +74,58 @@ export async function GET(request: NextRequest) {
       allEvents.map((e) => e.distinct_id)
     ).size
 
-    // ─── Estimated Avg Session (simple heuristic) ────────────────────────────
+    // ─── Session Calculation (FIXED) ─────────────────────────────────────────
     let avgSession = '—'
 
-    if (allEvents.length > 1) {
-      const timestamps = allEvents
-        .map((e) => new Date(e.timestamp).getTime())
-        .sort((a, b) => a - b)
+    if (allEvents.length > 0) {
+      const SESSION_GAP = 30 * 60 * 1000 // 30 minutes
 
-      const durationMs =
-        timestamps[timestamps.length - 1] - timestamps[0]
+      const eventsByUser: Record<string, typeof allEvents> = {}
 
-      if (durationMs > 0) {
-        const mins = Math.floor(durationMs / 60000)
-        const secs = Math.floor((durationMs % 60000) / 1000)
+      // Group by user
+      for (const event of allEvents) {
+        if (!eventsByUser[event.distinct_id]) {
+          eventsByUser[event.distinct_id] = []
+        }
+        eventsByUser[event.distinct_id].push(event)
+      }
+
+      let totalSessionTime = 0
+      let totalSessions = 0
+
+      for (const userEvents of Object.values(eventsByUser)) {
+        const sorted = userEvents
+          .map((e) => new Date(e.timestamp).getTime())
+          .sort((a, b) => a - b)
+
+        let sessionStart = sorted[0]
+        let lastEvent = sorted[0]
+
+        for (let i = 1; i < sorted.length; i++) {
+          const current = sorted[i]
+
+          // New session if gap > 30 min
+          if (current - lastEvent > SESSION_GAP) {
+            totalSessionTime += lastEvent - sessionStart
+            totalSessions++
+
+            sessionStart = current
+          }
+
+          lastEvent = current
+        }
+
+        // Final session
+        totalSessionTime += lastEvent - sessionStart
+        totalSessions++
+      }
+
+      if (totalSessions > 0) {
+        const avgMs = totalSessionTime / totalSessions
+
+        const mins = Math.floor(avgMs / 60000)
+        const secs = Math.floor((avgMs % 60000) / 1000)
+
         avgSession = `${mins}m ${secs}s`
       }
     }
