@@ -53,15 +53,11 @@ export function GraphQLNodeCard() {
           <span className="ml-2 text-white/30 text-xs">+4</span>
         </div>
 
-        <Link
-          href="#"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+        <div
+          className="px-3 py-1.5 bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors cursor-default"
         >
           Configure
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-            <path d="M5 12h14M13 6l6 6-6 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </Link>
+        </div>
       </div>
     </div>
   )
