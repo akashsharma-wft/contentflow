@@ -3,8 +3,6 @@
 import { RefreshCw, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { CreatePostModal } from './CreatePostModal'
-import Link from 'next/link'
-import { Eye } from 'lucide-react'
 
 interface PostsHeaderProps {
   onSync: () => Promise<unknown>
@@ -16,7 +14,7 @@ export function PostsHeader({ onSync, isSyncing }: PostsHeaderProps) {
 
   return (
     <>
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="w-full flex items-start justify-between gap-5 flex-wrap">
         <div>
           <div className="flex items-center gap-3 mb-1 flex-wrap">
             <h1 className="text-white text-2xl font-bold tracking-tight">Blog Posts</h1>

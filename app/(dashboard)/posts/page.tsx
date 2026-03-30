@@ -118,20 +118,6 @@ export default function PostsPage() {
         </div>
       )}
 
-      {/* Header row — inline preview toggle replaces separate preview page */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-3 mb-1 flex-wrap">
-            <h1 className="text-white text-2xl font-bold tracking-tight">Blog Posts</h1>
-            <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded">
-              via Sanity GROQ
-            </span>
-          </div>
-          <p className="text-white/35 text-sm">
-            Manage your technical documentation and editorial content.
-          </p>
-        </div>
-
         <div className="flex items-center gap-5 shrink-0 flex-wrap">
           {/* Preview toggle — only shown when user has own drafts */}
           {draftCount > 0 && (
@@ -151,7 +137,6 @@ export default function PostsPage() {
 
           <PostsHeader onSync={handleSync} isSyncing={isSyncing} />
         </div>
-      </div>
 
       {/* Search */}
       <div className="relative max-w-sm">
