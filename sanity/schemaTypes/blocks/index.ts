@@ -1,0 +1,7 @@
+export { heroSection } from './heroSection'
+export { featuredPostsSection } from './featuredPostsSection'
+export { recentPostsSection } from './recentPostsSection'
+export { ctaSection } from './ctaSection'
+export { statsSection } from './statsSection'
+export { richTextSection } from './richTextSection'
+export { formSection } from './formSection'

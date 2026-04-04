@@ -1,8 +1,15 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { draftMode } from 'next/headers'
+import { VisualEditing } from 'next-sanity/visual-editing'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/sonner'
+import { Navbar } from '@/components/Navbar'
+import { Footer } from '@/components/Footer'
+import { sanityClient } from '@/lib/sanity/client'
+import { SITE_CONFIG_QUERY } from '@/lib/sanity/queries'
+import type { SanitySiteConfig } from '@/types/sanity'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,16 +39,24 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const [{ isEnabled: isDraftMode }, siteConfig] = await Promise.all([
+    draftMode(),
+    sanityClient.fetch<SanitySiteConfig | null>(SITE_CONFIG_QUERY),
+  ])
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <Navbar siteConfig={siteConfig} />
         <Providers>{children}</Providers>
+        <Footer siteConfig={siteConfig} />
         <Toaster richColors position="top-right" />
+        {isDraftMode && <VisualEditing />}
       </body>
     </html>
   )

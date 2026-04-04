@@ -15,7 +15,7 @@ export function LoginForm() {
   const supabase = createClient()
   const searchParams = useSearchParams()
   const authError = searchParams.get('error')
-  const redirectTo = searchParams.get('redirectTo') ?? '/dashboard'
+  const redirectTo = searchParams.get('redirectTo') ?? '/'
 
   const [email, setEmail]               = useState('')
   const [password, setPassword]         = useState('')

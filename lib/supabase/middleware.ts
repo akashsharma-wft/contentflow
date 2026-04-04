@@ -1,10 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/signup', '/auth/callback', '/api/webhooks/stripe', '/api/webhooks']
-
-// Routes that should redirect to dashboard if already logged in
+// Routes that redirect to home if the user is already logged in
 const AUTH_ROUTES = ['/login', '/signup']
 
 export async function updateSession(request: NextRequest) {
@@ -29,24 +26,15 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // Always refresh the session cookie — required by Supabase SSR.
+  // Page-level components handle access control (isPublic / adminOnly).
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
-  const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route))
-
-  // Not logged in + trying to access protected route → redirect to login
-  if (!user && !isPublicRoute) {
+  // Logged-in user visiting login or signup → send them home
+  if (user && AUTH_ROUTES.some(route => pathname.startsWith(route))) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    // Save where they were trying to go so we can redirect back after login
-    url.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(url)
-  }
-
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 

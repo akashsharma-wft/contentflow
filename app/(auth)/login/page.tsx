@@ -1,15 +1,20 @@
 import { Suspense } from 'react'
+import { sanityClient } from '@/lib/sanity/client'
+import { AUTH_CONFIG_QUERY } from '@/lib/sanity/queries'
+import type { SanityAuthConfig } from '@/types/sanity'
 import { AuthShell } from '@/features/auth/components/AuthShell'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 
 export const metadata = { title: 'Sign in — ContentFlow' }
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const authConfig = await sanityClient.fetch<SanityAuthConfig | null>(AUTH_CONFIG_QUERY)
+
   return (
     <AuthShell
       mode="signin"
-      headline="CMS-driven publishing for engineering teams."
-      subheadline="Welcome back"
+      headline={authConfig?.leftPanelHeadline ?? 'CMS-driven publishing for engineering teams.'}
+      subheadline={authConfig?.loginSubheading ?? 'Welcome back'}
       badge={null}
     >
       {/* Suspense required because LoginForm uses useSearchParams */}
