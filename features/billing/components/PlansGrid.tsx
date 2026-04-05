@@ -1,8 +1,24 @@
+// features/billing/components/PlansGrid.tsx
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
 import { Check, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+interface BillingConfig {
+  plansHeading?: string
+  freePlanName?: string
+  freePlanTagline?: string
+  freePlanPrice?: string
+  freePlanFeatures?: string[]
+  proPlanName?: string
+  proPlanTagline?: string
+  proPlanBadge?: string
+  proPlanFeatures?: string[]
+  upgradeLabel?: string
+  downgradeLabel?: string
+  currentPlanButtonLabel?: string
+}
 
 interface StripePrice {
   id: string
@@ -16,16 +32,14 @@ interface PlansGridProps {
   currentTier: 'free' | 'pro'
   proPriceId: string
   onUpgrade: () => void
-  onDowngrade: () => void   // ← added
+  onDowngrade: () => void
   isLoading: boolean
-  isCancelling?: boolean    // ← added to show correct button state
+  isCancelling?: boolean
+  config: BillingConfig
 }
 
-const FREE_FEATURES = ['5 Published Posts', '1,000 API calls', 'Community Support']
-const PRO_FEATURES  = ['Unlimited Posts', '10,000 API calls', 'Priority Email Support', 'Team Collaboration (5 seats)']
-
 export function PlansGrid({
-  currentTier, proPriceId, onUpgrade, onDowngrade, isLoading, isCancelling
+  currentTier, proPriceId, onUpgrade, onDowngrade, isLoading, isCancelling, config
 }: PlansGridProps) {
   const { data: prices } = useQuery<StripePrice[]>({
     queryKey: ['stripe-prices'],
@@ -46,23 +60,30 @@ export function PlansGrid({
       minimumFractionDigits: 0,
     }).format(price.unit_amount / 100)
 
+  const freeFeatures = config.freePlanFeatures ?? ['5 Published Posts', '1,000 API calls', 'Community Support']
+  const proFeatures = config.proPlanFeatures ?? ['Unlimited Posts', '10,000 API calls', 'Priority Email Support', 'Team Collaboration (5 seats)']
+
   return (
     <div className="space-y-3">
-      <h3 className="text-white text-sm font-semibold">Plans</h3>
+      <h3 className="text-white text-sm font-semibold">
+        {config.plansHeading ?? 'Plans'}
+      </h3>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Free plan */}
         <div className="bg-[#13141c] border border-white/5 rounded-2xl p-5 space-y-4">
           <div>
-            <h4 className="text-white text-lg font-bold">Free</h4>
-            <p className="text-white/35 text-xs mt-1">For individuals starting their editorial journey.</p>
+            <h4 className="text-white text-lg font-bold">{config.freePlanName ?? 'Free'}</h4>
+            <p className="text-white/35 text-xs mt-1">
+              {config.freePlanTagline ?? 'For individuals starting their editorial journey.'}
+            </p>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-white text-3xl font-bold">$0</span>
+            <span className="text-white text-3xl font-bold">{config.freePlanPrice ?? '$0'}</span>
             <span className="text-white/30 text-sm">/mo</span>
           </div>
           <ul className="space-y-2">
-            {FREE_FEATURES.map((f) => (
+            {freeFeatures.map((f) => (
               <li key={f} className="flex items-center gap-2">
                 <Check size={13} className="text-white/30 shrink-0" />
                 <span className="text-white/45 text-sm">{f}</span>
@@ -80,10 +101,10 @@ export function PlansGrid({
             )}
           >
             {currentTier === 'free'
-              ? 'Current Plan'
+              ? (config.currentPlanButtonLabel ?? 'Current Plan')
               : isCancelling
               ? 'Downgrade scheduled'
-              : 'Downgrade'}
+              : (config.downgradeLabel ?? 'Downgrade')}
           </button>
         </div>
 
@@ -92,21 +113,21 @@ export function PlansGrid({
           'bg-[#13141c] border rounded-2xl p-5 space-y-4 relative',
           currentTier === 'pro' ? 'border-indigo-500/40' : 'border-indigo-500/20'
         )}>
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <span className="px-3 py-0.5 bg-indigo-500 text-white text-[10px] font-semibold uppercase tracking-widest rounded-full">
-              Most Popular
-            </span>
-          </div>
-
+          {config.proPlanBadge && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="px-3 py-0.5 bg-indigo-500 text-white text-[10px] font-semibold uppercase tracking-widest rounded-full">
+                {config.proPlanBadge}
+              </span>
+            </div>
+          )}
           <div>
             <h4 className="text-white text-lg font-bold">
-              {proPrice?.product.name ?? 'Pro'}
+              {proPrice?.product.name ?? config.proPlanName ?? 'Pro'}
             </h4>
             <p className="text-white/35 text-xs mt-1">
-              Unleash the full potential of high-performance content delivery.
+              {config.proPlanTagline ?? 'Unleash the full potential of high-performance content delivery.'}
             </p>
           </div>
-
           <div className="flex items-baseline gap-1">
             {proPrice ? (
               <>
@@ -117,16 +138,14 @@ export function PlansGrid({
               <Loader2 size={20} className="animate-spin text-white/30" />
             )}
           </div>
-
           <ul className="space-y-2">
-            {PRO_FEATURES.map((f) => (
+            {proFeatures.map((f) => (
               <li key={f} className="flex items-center gap-2">
                 <Check size={13} className="text-indigo-400 shrink-0" />
                 <span className="text-white/60 text-sm">{f}</span>
               </li>
             ))}
           </ul>
-
           <button
             onClick={currentTier !== 'pro' ? onUpgrade : undefined}
             disabled={isLoading || !proPrice || currentTier === 'pro'}
@@ -137,7 +156,9 @@ export function PlansGrid({
                 : 'bg-indigo-500 hover:bg-indigo-600 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
-            {isLoading ? 'Loading...' : currentTier === 'pro' ? 'Current Plan' : 'Upgrade to Pro'}
+            {isLoading ? 'Loading...' : currentTier === 'pro'
+              ? (config.currentPlanButtonLabel ?? 'Current Plan')
+              : (config.upgradeLabel ?? 'Upgrade to Pro')}
           </button>
         </div>
       </div>

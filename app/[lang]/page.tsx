@@ -5,18 +5,12 @@
  *      isSupportedLang(lang) && lang !== 'en'
  *      resolveContent('home', lang)
  *
- *   2. English slug pages  → /about, /my-post
+ *   2. English slug pages  → /about, /posts, /settings, /billing...
  *      !isSupportedLang(lang) (everything else)
  *      resolveContent(lang, 'en')  ← lang param IS the slug here
  *
- * WHY THIS FILE IS NAMED [lang] AND NOT [slug]:
- *   Next.js App Router requires the same dynamic segment name at the same
- *   URL depth across all branches. app/[lang]/[slug]/page.tsx already uses
- *   'lang' at depth 1, so this file must also use 'lang'. The param value
- *   is detected at runtime to determine which case applies.
- *
+ * If page.showSidebar = true → renders inside DashboardLayout (requires auth).
  * ISR: revalidates every 60 seconds.
- * /en → redirect to / (canonical English root)
  */
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -42,6 +36,7 @@ import {
 import { buildMetadata } from '@/lib/seo'
 import { SectionRenderer } from '@/sections/SectionRenderer'
 import { PostsListing } from '@/components/PostsListing'
+import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
 import type { SanityPage, SanityPost } from '@/types/sanity'
 
 export const revalidate = 60
@@ -133,7 +128,8 @@ async function LanguageHomePage({ lang }: { lang: SupportedLang }) {
   if (resolution.kind === 'page') {
     const { page } = resolution
 
-    if (!page.isPublic || page.adminOnly) {
+    // Sidebar pages require auth
+    if (page.showSidebar || !page.isPublic || page.adminOnly) {
       const supabase = await createSupabaseServer()
       const { data: { user } } = await supabase.auth.getUser()
 
@@ -146,6 +142,20 @@ async function LanguageHomePage({ lang }: { lang: SupportedLang }) {
           .eq('id', user.id)
           .single()
         if (profile?.role !== 'admin') redirect('/')
+      }
+
+      if (page.showSidebar) {
+        return (
+          <DashboardLayout>
+            {page.sections && page.sections.length > 0 ? (
+              <SectionRenderer sections={page.sections} lang={lang} />
+            ) : (
+              <div className="flex items-center justify-center h-64">
+                <p className="text-white/30 text-sm">This page has no sections yet.</p>
+              </div>
+            )}
+          </DashboardLayout>
+        )
       }
     }
 
@@ -173,7 +183,8 @@ async function EnglishContentPage({ slug }: { slug: string }) {
   if (resolution.kind === 'page') {
     const { page } = resolution
 
-    if (!page.isPublic || page.adminOnly) {
+    // Sidebar pages require auth
+    if (page.showSidebar || !page.isPublic || page.adminOnly) {
       const supabase = await createSupabaseServer()
       const { data: { user } } = await supabase.auth.getUser()
 
@@ -186,6 +197,20 @@ async function EnglishContentPage({ slug }: { slug: string }) {
           .eq('id', user.id)
           .single()
         if (profile?.role !== 'admin') redirect('/')
+      }
+
+      if (page.showSidebar) {
+        return (
+          <DashboardLayout>
+            {page.sections && page.sections.length > 0 ? (
+              <SectionRenderer sections={page.sections} lang="en" />
+            ) : (
+              <div className="flex items-center justify-center h-64">
+                <p className="text-white/30 text-sm">This page has no sections yet.</p>
+              </div>
+            )}
+          </DashboardLayout>
+        )
       }
     }
 

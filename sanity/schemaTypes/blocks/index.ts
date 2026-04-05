@@ -1,3 +1,4 @@
+// sanity/schemaTypes/blocks/index.ts
 // ──── EXISTING SECTIONS ────────────────────────────────────────────────────
 export { heroSection } from './heroSection'
 export { featuredPostsSection } from './featuredPostsSection'
@@ -11,7 +12,23 @@ export { formSection } from './formSection'
 export { gridSection, columnsSection, spacerSection, dividerSection } from './layoutBlocks'
 
 // ──── NEW SECTIONS (Content) ────────────────────────────────────────────────
-export { headingSection, featureListSection, testimonialsSection, faqSection, pricingSection, teamSection, logoBarSection, carouselSection, tableSection, timelineSection, bannerSection, tabsSection } from './contentBlocks'
+export {
+  headingSection, featureListSection, testimonialsSection, faqSection,
+  pricingSection, teamSection, logoBarSection, carouselSection,
+  tableSection, timelineSection, bannerSection, tabsSection,
+} from './contentBlocks'
 
 // ──── NEW SECTIONS (Media & Interactive) ────────────────────────────────────
-export { imageSection, gallerySection, videoSection, newsletterSection, contactSection, authHeroSection, notFoundSection } from './mediaAndInteractiveBlocks'
+export {
+  imageSection, gallerySection, videoSection, newsletterSection,
+  contactSection, authHeroSection, notFoundSection,
+} from './mediaAndInteractiveBlocks'
+
+// ──── APP PAGE MARKER BLOCKS ─────────────────────────────────────────────────
+export {
+  postsPageSection,
+  analyticsPageSection,
+  settingsPageSection,
+  billingPageSection,
+  adminPageSection,
+} from './appPageSections'

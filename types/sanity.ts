@@ -505,6 +505,11 @@ export type SanitySection =
   | ColumnsSection
   | SpacerSection
   | DividerSection
+  | PostsPageSection
+  | AnalyticsPageSection
+  | SettingsPageSection
+  | BillingPageSection
+  | AdminPageSection
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -518,6 +523,7 @@ export type SanityPage = {
   adminOnly?: boolean
   showNavbar?: boolean
   showSidebar?: boolean
+  requireAdmin?: boolean
   enablePosthogTracking?: boolean
   sections?: SanitySection[]
   seoTitle?: string
@@ -586,3 +592,106 @@ export type SanityAuthConfig = {
   leftPanelBadge?: string
   leftPanelFeatures?: AuthFeatureBullet[]
 }
+
+// types/sanity.ts — add these new types at the bottom of your existing file
+// (keep everything that's already there, just append these)
+
+// ─── App Page Config Singletons ────────────────────────────────────────────────
+
+export type SanityPostsPageConfig = {
+  heading?: string
+  subheading?: string
+  groqBadgeLabel?: string
+  syncButtonLabel?: string
+  newPostButtonLabel?: string
+  myPostsLabel?: string
+  publishedLabel?: string
+  draftsLabel?: string
+  searchPlaceholder?: string
+  colTitle?: string
+  colStatus?: string
+  colTags?: string
+  colLastModified?: string
+  emptyTitle?: string
+  emptyBody?: string
+  emptyCtaLabel?: string
+}
+
+export type SanityAnalyticsConfig = {
+  heading?: string
+  subheading?: string
+  eventsLabel?: string
+  usersLabel?: string
+  avgSessionLabel?: string
+  liveStreamLabel?: string
+  refreshLabel?: string
+  emptyTitle?: string
+  emptyBody?: string
+  featureFlagLabel?: string
+}
+
+export type SanitySettingsPageConfig = {
+  heading?: string
+  subheading?: string
+  profileSectionLabel?: string
+  displayNameLabel?: string
+  emailLabel?: string
+  emailHelperText?: string
+  bioLabel?: string
+  bioMaxLength?: number
+  websiteLabel?: string
+  uploadPhotoLabel?: string
+  saveLabel?: string
+  discardLabel?: string
+  dangerZoneHeading?: string
+  dangerZoneBody?: string
+  dangerZoneWarning?: string
+  deleteAccountLabel?: string
+}
+
+export type SanityBillingPageConfig = {
+  heading?: string
+  subheading?: string
+  currentPlanLabel?: string
+  manageLabel?: string
+  cancelLabel?: string
+  reactivateLabel?: string
+  upgradeLabel?: string
+  usageHeading?: string
+  postsUsageLabel?: string
+  apiUsageLabel?: string
+  storageUsageLabel?: string
+  seatsUsageLabel?: string
+  plansHeading?: string
+  freePlanName?: string
+  freePlanTagline?: string
+  freePlanPrice?: string
+  freePlanFeatures?: string[]
+  proPlanName?: string
+  proPlanTagline?: string
+  proPlanBadge?: string
+  proPlanFeatures?: string[]
+  downgradeLabel?: string
+  currentPlanButtonLabel?: string
+}
+
+export type SanityAdminPageConfig = {
+  heading?: string
+  subheading?: string
+  totalUsersLabel?: string
+  colUser?: string
+  colPlan?: string
+  colRole?: string
+  colJoined?: string
+  footerNote?: string
+  emptyLabel?: string
+}
+
+// ─── App page marker section types ─────────────────────────────────────────────
+// Add these to your SanitySection union type too
+
+export type PostsPageSection   = { _type: 'postsPageSection';   _key: string }
+export type AnalyticsPageSection = { _type: 'analyticsPageSection'; _key: string }
+export type SettingsPageSection = { _type: 'settingsPageSection'; _key: string }
+export type BillingPageSection  = { _type: 'billingPageSection';  _key: string }
+export type AdminPageSection    = { _type: 'adminPageSection';    _key: string }

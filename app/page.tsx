@@ -2,7 +2,8 @@
  * / — English homepage
  *
  * ISR: revalidates every 60 seconds.
- * SEO: fetches seoTitle/seoDescription from Sanity home page document.
+ * If page.showSidebar = true, wraps content in DashboardLayout (requires auth).
+ * Otherwise renders public layout.
  */
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
@@ -13,6 +14,7 @@ import { PAGE_BY_SLUG_AND_LANG_QUERY } from '@/lib/sanity/queries'
 import { buildMetadata } from '@/lib/seo'
 import { SectionRenderer } from '@/sections/SectionRenderer'
 import { PostsListing } from '@/components/PostsListing'
+import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
 import type { SanityPage } from '@/types/sanity'
 
 export const revalidate = 60
@@ -39,7 +41,8 @@ export default async function HomePage() {
   if (resolution.kind === 'page') {
     const { page } = resolution
 
-    if (!page.isPublic || page.adminOnly) {
+    // ── Sidebar pages require auth ───────────────────────────────────────────
+    if (page.showSidebar || !page.isPublic || page.adminOnly) {
       const supabase = await createSupabaseServer()
       const { data: { user } } = await supabase.auth.getUser()
 
@@ -53,8 +56,23 @@ export default async function HomePage() {
           .single()
         if (profile?.role !== 'admin') redirect('/')
       }
+
+      if (page.showSidebar) {
+        return (
+          <DashboardLayout>
+            {page.sections && page.sections.length > 0 ? (
+              <SectionRenderer sections={page.sections} lang="en" />
+            ) : (
+              <div className="flex items-center justify-center h-64">
+                <p className="text-white/30 text-sm">This page has no sections yet.</p>
+              </div>
+            )}
+          </DashboardLayout>
+        )
+      }
     }
 
+    // ── Public page ──────────────────────────────────────────────────────────
     return (
       <div className="min-h-screen bg-[#0d0e14]">
         {page.sections && page.sections.length > 0 ? (

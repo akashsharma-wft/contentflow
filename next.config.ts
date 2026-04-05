@@ -1,25 +1,22 @@
+// next.config.ts
+// We add x-pathname header to every request so the root layout can
+// conditionally show/hide Navbar & Footer on dashboard pages.
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: [
-    'sanity',
-    '@sanity/vision',
-    '@sanity/presentation',
-    '@sanity/document-internationalization',
-  ],
-  trailingSlash: false,
   images: {
-    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cdn.sanity.io',
-      },
+      { protocol: 'https', hostname: 'cdn.sanity.io' },
+      { protocol: 'https', hostname: 'qyzgcwwoehpeietxrqrh.supabase.co' },
     ],
+  },
+  async headers() {
+    return []
+  },
+  // Middleware rewrites x-pathname header — this enables layout.tsx to know
+  // the current route without being a client component.
+  experimental: {
+    // needed for server components to read request headers in layout
   },
 }
 

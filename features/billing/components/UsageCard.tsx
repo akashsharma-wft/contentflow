@@ -1,5 +1,4 @@
-// ─── features/billing/components/UsageCard.tsx ───────────────────────────────
-// Usage this month section with progress bars — matches Figma exactly.
+// features/billing/components/UsageCard.tsx
 import { cn } from '@/lib/utils'
 
 interface UsageItem {
@@ -11,6 +10,7 @@ interface UsageItem {
 
 interface UsageCardProps {
   items: UsageItem[]
+  heading?: string
 }
 
 function UsageBar({ item }: { item: UsageItem }) {
@@ -34,10 +34,7 @@ function UsageBar({ item }: { item: UsageItem }) {
       </div>
       <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
         <div
-          className={cn(
-            'h-full rounded-full transition-all',
-            isDanger ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-indigo-500'
-          )}
+          className={cn('h-full rounded-full transition-all', isDanger ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-indigo-500')}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -45,10 +42,10 @@ function UsageBar({ item }: { item: UsageItem }) {
   )
 }
 
-export function UsageCard({ items }: UsageCardProps) {
+export function UsageCard({ items, heading = 'Usage this month' }: UsageCardProps) {
   return (
     <div className="bg-[#13141c] border border-white/5 rounded-2xl p-5 space-y-4">
-      <h3 className="text-white text-sm font-semibold">Usage this month</h3>
+      <h3 className="text-white text-sm font-semibold">{heading}</h3>
       <div className="space-y-4">
         {items.map((item) => (
           <UsageBar key={item.label} item={item} />

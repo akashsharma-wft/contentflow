@@ -1,7 +1,4 @@
-// ─── features/settings/components/ProfileForm.tsx ────────────────────────────
-// Profile settings form — the main form section with all fields.
-// Uses React Hook Form + Zod for validation as required by assignment.
-// Pre-populates from Supabase via useQuery, saves via useMutation.
+// features/settings/components/ProfileForm.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -29,47 +26,49 @@ import { CheckCircle2, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePostHog } from 'posthog-js/react'
 
-// Zod schema — exactly matching assignment requirement
+interface SettingsConfig {
+  profileSectionLabel?: string
+  displayNameLabel?: string
+  emailLabel?: string
+  emailHelperText?: string
+  bioLabel?: string
+  bioMaxLength?: number
+  websiteLabel?: string
+  uploadPhotoLabel?: string
+  saveLabel?: string
+  discardLabel?: string
+  dangerZoneHeading?: string
+  dangerZoneBody?: string
+  dangerZoneWarning?: string
+  deleteAccountLabel?: string
+}
+
+interface ProfileFormProps {
+  config: SettingsConfig
+}
+
 const profileSchema = z.object({
-  displayName: z
-    .string()
-    .min(2, 'Display name must be at least 2 characters')
-    .max(50, 'Display name must be under 50 characters'),
+  displayName: z.string().min(2, 'Display name must be at least 2 characters').max(50, 'Display name must be under 50 characters'),
   email: z.string().email(),
-  bio: z
-    .string()
-    .max(200, 'Bio must be under 200 characters')
-    .optional()
-    .or(z.literal('')),
-  website: z
-    .string()
-    .url('Must be a valid URL')
-    .optional()
-    .or(z.literal('')),
+  bio: z.string().max(200, 'Bio must be under 200 characters').optional().or(z.literal('')),
+  website: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   avatarUrl: z.string().optional().or(z.literal('')),
 })
 
 type ProfileFormData = z.infer<typeof profileSchema>
 
-export function ProfileForm() {
+export function ProfileForm({ config }: ProfileFormProps) {
   const supabase = createClient()
   const queryClient = useQueryClient()
   const { user } = useUser()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const posthog = usePostHog()
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      displayName: '',
-      email: '',
-      bio: '',
-      website: '',
-      avatarUrl: '',
-    },
+    defaultValues: { displayName: '', email: '', bio: '', website: '', avatarUrl: '' },
   })
 
-  // Fetch profile data — enabled only when user is loaded
-  // This prevents the "empty form renders before data" bug
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -81,11 +80,9 @@ export function ProfileForm() {
       if (error) throw error
       return data
     },
-    enabled: !!user?.id, // only run when we have a user ID
+    enabled: !!user?.id,
   })
 
-  // Reset form with real data once it loads — this is the correct pattern
-  // Using defaultValues alone won't work because data arrives after mount
   useEffect(() => {
     if (profile && user) {
       form.reset({
@@ -97,8 +94,6 @@ export function ProfileForm() {
       })
     }
   }, [profile, user, form])
-
-  const posthog = usePostHog()
 
   const { mutate: saveProfile, isPending: isSaving } = useMutation({
     mutationFn: async (data: ProfileFormData) => {
@@ -117,22 +112,15 @@ export function ProfileForm() {
     onSuccess: (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] })
       toast.success('Profile saved successfully')
-      // Track form submission — required by assignment
       posthog?.capture('form_submitted', {
         form: 'settings_profile',
-        fields_changed: Object.keys(data).filter(
-          k => data[k as keyof ProfileFormData] !== ''
-        ).length,
+        fields_changed: Object.keys(data).filter(k => data[k as keyof ProfileFormData] !== '').length,
       })
     },
-    onError: (err: Error) => {
-      toast.error(err.message || 'Failed to save profile')
-    },
+    onError: (err: Error) => { toast.error(err.message || 'Failed to save profile') },
   })
 
-  function onSubmit(data: ProfileFormData) {
-    saveProfile(data)
-  }
+  function onSubmit(data: ProfileFormData) { saveProfile(data) }
 
   function handleDiscard() {
     if (profile && user) {
@@ -146,7 +134,6 @@ export function ProfileForm() {
     }
   }
 
-  // Show skeleton while data is loading — not the form
   if (isLoading || !profile) {
     return (
       <div className="space-y-4">
@@ -160,34 +147,37 @@ export function ProfileForm() {
   const bioValue = form.watch('bio') ?? ''
   const displayNameValue = form.watch('displayName') ?? ''
   const displayNameIsValid = displayNameValue.length >= 2 && displayNameValue.length <= 50
+  const bioMax = config.bioMaxLength ?? 200
 
   return (
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-          {/* Avatar section */}
+          {/* Avatar */}
           <ProfileAvatar
             avatarUrl={form.watch('avatarUrl') || null}
             displayName={form.watch('displayName')}
             userId={user?.id ?? ''}
             onUploadComplete={(url) => form.setValue('avatarUrl', url)}
+            uploadLabel={config.uploadPhotoLabel}
           />
 
           {/* Profile fields card */}
           <div className="bg-[#13141c] border border-white/5 rounded-2xl p-5 space-y-5">
-            {/* Section header */}
             <div className="flex items-center justify-between border-b border-white/5 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-0.5 h-4 bg-indigo-500 rounded-full" />
-                <h3 className="text-white text-sm font-semibold">Profile</h3>
+                <h3 className="text-white text-sm font-semibold">
+                  {config.profileSectionLabel ?? 'Profile'}
+                </h3>
               </div>
               <span className="text-white/20 text-[10px] font-mono uppercase tracking-widest">
                 Metadata ID: CF-9921
               </span>
             </div>
 
-            {/* Display name + Email — two columns on desktop */}
+            {/* Display name + Email */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -195,7 +185,7 @@ export function ProfileForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-white/50 text-xs font-medium">
-                      Display name
+                      {config.displayNameLabel ?? 'Display name'}
                     </FormLabel>
                     <FormControl>
                       <div className="relative">
@@ -208,12 +198,8 @@ export function ProfileForm() {
                             displayNameIsValid && 'border-emerald-500/40'
                           )}
                         />
-                        {/* Green checkmark when valid — matches Figma */}
                         {displayNameIsValid && (
-                          <CheckCircle2
-                            size={15}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400"
-                          />
+                          <CheckCircle2 size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400" />
                         )}
                       </div>
                     </FormControl>
@@ -228,10 +214,9 @@ export function ProfileForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-white/50 text-xs font-medium">
-                      Email address
+                      {config.emailLabel ?? 'Email address'}
                     </FormLabel>
                     <FormControl>
-                      {/* Email is read-only — managed by Supabase Auth */}
                       <Input
                         {...field}
                         type="email"
@@ -240,7 +225,7 @@ export function ProfileForm() {
                       />
                     </FormControl>
                     <FormDescription className="text-indigo-400/60 text-[10px] font-mono">
-                      Managed by Supabase Auth
+                      {config.emailHelperText ?? 'Managed by Supabase Auth'}
                     </FormDescription>
                   </FormItem>
                 )}
@@ -254,13 +239,11 @@ export function ProfileForm() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center justify-between">
-                    <FormLabel className="text-white/50 text-xs font-medium">Bio</FormLabel>
-                    {/* Live character count — matches Figma */}
-                    <span className={cn(
-                      'text-[10px] font-mono',
-                      bioValue.length > 180 ? 'text-amber-400' : 'text-white/25'
-                    )}>
-                      {bioValue.length} / 200
+                    <FormLabel className="text-white/50 text-xs font-medium">
+                      {config.bioLabel ?? 'Bio'}
+                    </FormLabel>
+                    <span className={cn('text-[10px] font-mono', bioValue.length > bioMax - 20 ? 'text-amber-400' : 'text-white/25')}>
+                      {bioValue.length} / {bioMax}
                     </span>
                   </div>
                   <FormControl>
@@ -269,7 +252,7 @@ export function ProfileForm() {
                       rows={3}
                       disabled={isSaving}
                       placeholder="Write a short technical bio..."
-                      maxLength={200}
+                      maxLength={bioMax}
                       className="w-full px-3 py-2.5 bg-[#0d0e14] border border-white/10 rounded-xl text-white/70 text-sm placeholder:text-white/20 outline-none focus:border-indigo-500/40 transition-colors resize-none"
                     />
                   </FormControl>
@@ -284,7 +267,9 @@ export function ProfileForm() {
               name="website"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-white/50 text-xs font-medium">Website</FormLabel>
+                  <FormLabel className="text-white/50 text-xs font-medium">
+                    {config.websiteLabel ?? 'Website'}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -294,12 +279,10 @@ export function ProfileForm() {
                       className={cn(
                         'bg-[#0d0e14] border-white/10 text-white placeholder:text-white/20 h-10 rounded-xl',
                         'focus-visible:ring-indigo-500/30 focus-visible:border-indigo-500/50',
-                        // Red border when URL is invalid — matches Figma
                         form.formState.errors.website && 'border-red-500/50 focus-visible:border-red-500/50'
                       )}
                     />
                   </FormControl>
-                  {/* FormMessage automatically shows Zod error — "Must be a valid URL" */}
                   <FormMessage className="text-red-400 text-xs flex items-center gap-1">
                     <AlertTriangle size={11} />
                   </FormMessage>
@@ -315,7 +298,7 @@ export function ProfileForm() {
                 disabled={isSaving}
                 className="px-4 py-2 text-sm text-white/40 hover:text-white/70 transition-colors cursor-pointer disabled:opacity-50"
               >
-                Discard
+                {config.discardLabel ?? 'Discard'}
               </button>
               <button
                 type="submit"
@@ -326,33 +309,33 @@ export function ProfileForm() {
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
-                {isSaving ? 'Saving...' : 'Save changes'}
+                {isSaving ? 'Saving...' : (config.saveLabel ?? 'Save changes')}
               </button>
             </div>
           </div>
 
           {/* Danger Zone */}
           <div className="bg-[#13141c] border border-red-500/20 rounded-2xl p-5 space-y-3">
-            <h3 className="text-red-400 text-sm font-semibold">Danger Zone</h3>
+            <h3 className="text-red-400 text-sm font-semibold">
+              {config.dangerZoneHeading ?? 'Danger Zone'}
+            </h3>
             <p className="text-white/35 text-xs leading-relaxed">
-              Permanently delete your account and all associated architectural data.
-              This action cannot be undone.
+              {config.dangerZoneBody ?? 'Permanently delete your account and all associated architectural data. This action cannot be undone.'}
             </p>
             <p className="text-red-400/50 text-[10px] uppercase tracking-widest font-mono">
-              Warning: All API keys will be invalidated.
+              {config.dangerZoneWarning ?? 'Warning: All API keys will be invalidated.'}
             </p>
             <button
               type="button"
               onClick={() => setDeleteDialogOpen(true)}
               className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 text-sm font-medium rounded-lg transition-all cursor-pointer"
             >
-              Delete Account
+              {config.deleteAccountLabel ?? 'Delete Account'}
             </button>
           </div>
         </form>
       </Form>
 
-      {/* Delete confirmation dialog */}
       <DeleteAccountDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

@@ -1,3 +1,4 @@
+// features/analytics/components/PostHogEventsClient.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -6,11 +7,25 @@ import { useUser } from '@/hooks/useUser'
 import { ToggleRight, Loader2, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+interface AnalyticsConfig {
+  heading?: string
+  subheading?: string
+  eventsLabel?: string
+  usersLabel?: string
+  avgSessionLabel?: string
+  liveStreamLabel?: string
+  refreshLabel?: string
+  emptyTitle?: string
+  emptyBody?: string
+  featureFlagLabel?: string
+}
+
 interface ServerFlags {
   showFeaturedBanner: boolean
 }
 
 interface PostHogEventsClientProps {
+  config: AnalyticsConfig
   serverFlags: ServerFlags
 }
 
@@ -24,7 +39,6 @@ interface LiveEvent {
 type SortMode = 'time' | 'important'
 
 const EVENT_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  // Custom events — high priority, shown first
   post_viewed:        { bg: 'bg-indigo-500/15',  text: 'text-indigo-300',  label: 'post_viewed' },
   post_created:       { bg: 'bg-emerald-500/15', text: 'text-emerald-300', label: 'post_created' },
   post_edited:        { bg: 'bg-blue-500/15',    text: 'text-blue-300',    label: 'post_edited' },
@@ -33,10 +47,7 @@ const EVENT_COLORS: Record<string, { bg: string; text: string; label: string }> 
   upgrade_completed:  { bg: 'bg-purple-500/15',  text: 'text-purple-300',  label: 'upgrade_completed' },
   form_submitted:     { bg: 'bg-emerald-500/15', text: 'text-emerald-300', label: 'form_submitted' },
   login:              { bg: 'bg-emerald-500/15', text: 'text-emerald-300', label: 'login' },
-  page_view:          { bg: 'bg-white/5',        text: 'text-white/40',    label: 'page_view' },
-  // Posthog system events — shown last
   '$pageview':        { bg: 'bg-white/5',        text: 'text-white/35',    label: '$pageview' },
-  '$feature_flag_called': { bg: 'bg-indigo-500/8', text: 'text-indigo-400/60', label: '$feature_flag_called' },
   '$autocapture':     { bg: 'bg-white/[0.03]',   text: 'text-white/20',    label: '$autocapture' },
   '$web_vitals':      { bg: 'bg-blue-500/8',     text: 'text-blue-400/50', label: '$web_vitals' },
   '$set':             { bg: 'bg-white/[0.03]',   text: 'text-white/20',    label: '$set' },
@@ -61,7 +72,7 @@ function formatProps(properties: Record<string, unknown>): string {
     .join(' · ')
 }
 
-export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
+export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClientProps) {
   const posthog = usePostHog()
   const { user } = useUser()
   const [events, setEvents] = useState<LiveEvent[]>([])
@@ -71,7 +82,6 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
   const [sortMode, setSortMode] = useState<SortMode>('time')
   const [customEvents, setCustomEvents] = useState<LiveEvent[]>([])
   const [systemEvents, setSystemEvents] = useState<LiveEvent[]>([])
-
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   async function refreshEvents() {
@@ -95,7 +105,6 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
   }
 
   useEffect(() => {
-    // Fetch real events from our API route
     async function fetchEvents() {
       try {
         const response = await fetch('/api/analytics/events')
@@ -116,7 +125,6 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
         setIsLoading(false)
       }
     }
-
     fetchEvents()
     posthog?.capture('page_view', { path: '/analytics' })
   }, [posthog])
@@ -129,25 +137,29 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
   }, [posthog, user?.id, serverFlags.showFeaturedBanner])
 
   const displayedEvents = sortMode === 'important'
-  ? [...customEvents, ...systemEvents]  // custom first, then system
-  : events  // chronological
+    ? [...customEvents, ...systemEvents]
+    : events
+
+  const statCards = [
+    { label: config.eventsLabel ?? 'Events Today', value: isLoading ? '—' : `${stats.eventsToday}+` },
+    { label: config.usersLabel ?? 'Unique Users', value: isLoading ? '—' : stats.uniqueUsers.toString() },
+    { label: config.avgSessionLabel ?? 'Avg. Session', value: isLoading ? '—' : stats.avgSession },
+  ]
 
   return (
     <div className="py-6 space-y-5 max-w-[900px]">
       <div>
-        <h1 className="text-white text-2xl font-bold tracking-tight">PostHog Events</h1>
+        <h1 className="text-white text-2xl font-bold tracking-tight">
+          {config.heading ?? 'PostHog Events'}
+        </h1>
         <p className="text-white/30 text-[10px] uppercase tracking-widest font-mono mt-1">
-          Real-time Telemetry / Production Pipeline
+          {config.subheading ?? 'Real-time Telemetry / Production Pipeline'}
         </p>
       </div>
 
-      {/* Real stats — 0 until data loads */}
+      {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Events Today', value: isLoading ? '—' : `${stats.eventsToday.toString()}+` },
-          { label: 'Unique Users', value: isLoading ? '—' : stats.uniqueUsers.toString() },
-          { label: 'Avg. Session', value: isLoading ? '—' : stats.avgSession },
-        ].map(({ label, value }) => (
+        {statCards.map(({ label, value }) => (
           <div key={label} className="bg-[#13141c] border border-white/5 rounded-xl p-4">
             <p className="text-white/30 text-[10px] uppercase tracking-widest font-mono mb-2">{label}</p>
             <p className="text-white text-2xl font-bold tracking-tight">
@@ -157,11 +169,13 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
         ))}
       </div>
 
-      {/* Live event stream — real data or empty state */}
+      {/* Live event stream */}
       <div className="bg-[#13141c] border border-white/5 rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <h3 className="text-white text-sm font-semibold">Live event stream</h3>
+            <h3 className="text-white text-sm font-semibold">
+              {config.liveStreamLabel ?? 'Live event stream'}
+            </h3>
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
           <div className="flex items-center gap-2">
@@ -176,9 +190,9 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
               disabled={isRefreshing}
               className="text-white/30 hover:text-white/60 text-[10px] uppercase tracking-widest font-mono cursor-pointer transition-colors px-2 py-1 rounded border border-white/10 hover:border-white/20"
             >
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              {isRefreshing ? 'Refreshing...' : (config.refreshLabel ?? 'Refresh')}
             </button>
-            <span className="text-white/20 text-[10px] font-mono">NEXT_PUBLIC_POSTHOG_KEY</span>
+            <span className="text-white/20 text-[10px] font-mono hidden lg:block">NEXT_PUBLIC_POSTHOG_KEY</span>
           </div>
         </div>
 
@@ -191,10 +205,9 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
               <Activity size={18} className="text-white/20" />
             </div>
-            <p className="text-white/30 text-sm">No events yet</p>
+            <p className="text-white/30 text-sm">{config.emptyTitle ?? 'No events yet'}</p>
             <p className="text-white/20 text-xs max-w-xs text-center">
-              Events will appear here as users interact with your app.
-              Make sure PostHog is initialized correctly.
+              {config.emptyBody ?? 'Events will appear here as users interact with your app.'}
             </p>
           </div>
         ) : (
@@ -202,7 +215,7 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
             {displayedEvents.map((event, i) => {
               const style = getEventStyle(event.event)
               return (
-                <div key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors group">
+                <div key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors">
                   <span className="text-white/20 text-[11px] font-mono w-16 shrink-0 tabular-nums">
                     {timeAgo(event.timestamp)}
                   </span>
@@ -219,17 +232,14 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
         )}
       </div>
 
-      {/* Feature flag */}
+      {/* Feature flag display */}
       <div className="bg-[#13141c] border border-white/5 rounded-2xl p-5">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
               <ToggleRight size={15} className="text-indigo-400" />
               <p className="text-white text-sm font-medium">
-                Feature flag:{' '}
-                <code className="text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded text-xs font-mono">
-                  show-featured-banner
-                </code>
+                {config.featureFlagLabel ?? 'Feature flag: show-featured-banner'}
               </p>
             </div>
             <p className="text-white/35 text-xs mt-1 ml-5">
@@ -238,10 +248,10 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
                 : 'Disabled — toggle in PostHog dashboard to enable'}
             </p>
           </div>
-          <div className={cn(
-            'relative rounded-full transition-all',
-            featureFlagEnabled ? 'bg-emerald-500' : 'bg-white/10'
-          )} style={{ width: '44px', height: '24px' }}>
+          <div
+            className={cn('relative rounded-full transition-all', featureFlagEnabled ? 'bg-emerald-500' : 'bg-white/10')}
+            style={{ width: '44px', height: '24px' }}
+          >
             <span className={cn(
               'absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm',
               featureFlagEnabled ? 'left-6' : 'left-1'
@@ -256,7 +266,7 @@ export function PostHogEventsClient({ serverFlags }: PostHogEventsClientProps) {
           <span className="text-white/25 text-[10px] font-mono uppercase">Connected to PostHog</span>
         </div>
         <a
-          href={`https://us.posthog.com/project/${process.env.NEXT_PUBLIC_POSTHOG_KEY?.slice(0, 8)}`}
+          href="https://us.posthog.com"
           target="_blank"
           rel="noopener noreferrer"
           className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-mono uppercase tracking-widest rounded-lg transition-colors cursor-pointer"

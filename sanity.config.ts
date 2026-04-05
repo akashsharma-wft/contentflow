@@ -1,3 +1,4 @@
+// sanity.config.ts
 import { defineConfig } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
@@ -7,6 +8,10 @@ import {
   DocumentIcon,
   CogIcon,
   LockIcon,
+  DashboardIcon,
+  BarChartIcon,
+  BillIcon,
+  UserIcon,
 } from '@sanity/icons'
 import { schemaTypes } from '@/sanity/schemaTypes'
 
@@ -16,9 +21,16 @@ const SUPPORTED_LANGUAGES = [
   { id: 'kn', title: 'Kannada' },
 ]
 
-// Singleton document type names — excluded from the "new document" menu
-// and accessed only via the Structure Tool direct links below.
-const SINGLETON_TYPES = ['siteConfig', 'authConfig']
+// All singleton document type names — excluded from the "new document" menu
+const SINGLETON_TYPES = [
+  'siteConfig',
+  'authConfig',
+  'postsPageConfig',
+  'analyticsConfig',
+  'settingsPageConfig',
+  'billingPageConfig',
+  'adminPageConfig',
+]
 
 // Schema types that support multiple languages via document-internationalization
 const I18N_SCHEMA_TYPES = ['post', 'page']
@@ -54,7 +66,7 @@ export default defineConfig({
 
             S.divider(),
 
-            // ── Singletons ───────────────────────────────────────────
+            // ── Global Singletons ─────────────────────────────────────
             S.listItem()
               .title('Site Configuration')
               .icon(CogIcon)
@@ -75,6 +87,69 @@ export default defineConfig({
                   .schemaType('authConfig')
                   .documentId('authConfig')
                   .title('Auth Configuration')
+              ),
+
+            S.divider(),
+
+            // ── App Page Configurations ───────────────────────────────
+            S.listItem()
+              .title('App Pages')
+              .icon(DashboardIcon)
+              .child(
+                S.list()
+                  .title('App Page Configurations')
+                  .items([
+                    S.listItem()
+                      .title('Posts Page')
+                      .icon(DocumentTextIcon)
+                      .id('postsPageConfig')
+                      .child(
+                        S.document()
+                          .schemaType('postsPageConfig')
+                          .documentId('postsPageConfig')
+                          .title('Posts Page')
+                      ),
+                    S.listItem()
+                      .title('Analytics Page')
+                      .icon(BarChartIcon)
+                      .id('analyticsConfig')
+                      .child(
+                        S.document()
+                          .schemaType('analyticsConfig')
+                          .documentId('analyticsConfig')
+                          .title('Analytics Page')
+                      ),
+                    S.listItem()
+                      .title('Settings Page')
+                      .icon(CogIcon)
+                      .id('settingsPageConfig')
+                      .child(
+                        S.document()
+                          .schemaType('settingsPageConfig')
+                          .documentId('settingsPageConfig')
+                          .title('Settings Page')
+                      ),
+                    S.listItem()
+                      .title('Billing Page')
+                      .icon(BillIcon)
+                      .id('billingPageConfig')
+                      .child(
+                        S.document()
+                          .schemaType('billingPageConfig')
+                          .documentId('billingPageConfig')
+                          .title('Billing Page')
+                      ),
+                    S.listItem()
+                      .title('Admin Page')
+                      .icon(UserIcon)
+                      .id('adminPageConfig')
+                      .child(
+                        S.document()
+                          .schemaType('adminPageConfig')
+                          .documentId('adminPageConfig')
+                          .title('Admin Page')
+                      ),
+                  ])
               ),
           ]),
     }),

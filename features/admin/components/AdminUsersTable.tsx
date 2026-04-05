@@ -1,4 +1,4 @@
-// ─── features/admin/components/AdminUsersTable.tsx ───────────────────────────
+// features/admin/components/AdminUsersTable.tsx
 'use client'
 
 import { format } from 'date-fns'
@@ -8,11 +8,24 @@ import type { Database } from '@/types/supabase'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
-interface AdminUsersTableProps {
-  users: Profile[]
+interface AdminConfig {
+  heading?: string
+  subheading?: string
+  totalUsersLabel?: string
+  colUser?: string
+  colPlan?: string
+  colRole?: string
+  colJoined?: string
+  footerNote?: string
+  emptyLabel?: string
 }
 
-export function AdminUsersTable({ users }: AdminUsersTableProps) {
+interface AdminUsersTableProps {
+  users: Profile[]
+  config: AdminConfig
+}
+
+export function AdminUsersTable({ users, config }: AdminUsersTableProps) {
   const proCount  = users.filter((u) => u.subscription_tier === 'pro').length
   const freeCount = users.filter((u) => u.subscription_tier === 'free').length
 
@@ -22,15 +35,19 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
         <div>
           <div className="flex items-center gap-3">
             <Shield size={20} className="text-indigo-400" />
-            <h1 className="text-white text-2xl font-bold tracking-tight">Admin Panel</h1>
+            <h1 className="text-white text-2xl font-bold tracking-tight">
+              {config.heading ?? 'Admin Panel'}
+            </h1>
           </div>
           <p className="text-white/35 text-sm mt-1">
-            All users and their subscription tiers — admin access only.
+            {config.subheading ?? 'All users and their subscription tiers — admin access only.'}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
-            <span className="text-indigo-300 text-xs font-mono">{users.length} total users</span>
+            <span className="text-indigo-300 text-xs font-mono">
+              {users.length} {config.totalUsersLabel ?? 'total users'}
+            </span>
           </div>
           <div className="px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg">
             <span className="text-purple-300 text-xs font-mono">{proCount} pro</span>
@@ -43,7 +60,7 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
 
       <div className="bg-[#13141c] border border-white/5 rounded-2xl overflow-hidden">
         <div className="grid grid-cols-[32px_1fr_120px_80px_140px] px-5 py-3 border-b border-white/5">
-          {['', 'User', 'Plan', 'Role', 'Joined'].map((col) => (
+          {['', config.colUser ?? 'User', config.colPlan ?? 'Plan', config.colRole ?? 'Role', config.colJoined ?? 'Joined'].map((col) => (
             <span key={col} className="text-white/25 text-[10px] uppercase tracking-widest font-medium">
               {col}
             </span>
@@ -52,7 +69,7 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
 
         {users.length === 0 ? (
           <div className="flex items-center justify-center py-12">
-            <p className="text-white/30 text-sm">No users found</p>
+            <p className="text-white/30 text-sm">{config.emptyLabel ?? 'No users found'}</p>
           </div>
         ) : (
           users.map((user, i) => (
@@ -63,7 +80,6 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
                 i < users.length - 1 && 'border-b border-white/5'
               )}
             >
-              {/* Avatar */}
               <div className="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center overflow-hidden">
                 {user.avatar_url ? (
                   <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -72,7 +88,6 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
                 )}
               </div>
 
-              {/* Name + email */}
               <div className="min-w-0 pl-2">
                 <p className="text-white/80 text-sm font-medium truncate">
                   {user.display_name ?? 'Anonymous'}
@@ -80,7 +95,6 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
                 <p className="text-white/30 text-xs truncate">{user.email}</p>
               </div>
 
-              {/* Subscription tier */}
               <div>
                 <span className={cn(
                   'flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full w-fit',
@@ -93,7 +107,6 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
                 </span>
               </div>
 
-              {/* Role */}
               <span className={cn(
                 'text-[10px] font-semibold uppercase tracking-wide',
                 user.role === 'admin' ? 'text-indigo-400' : 'text-white/30'
@@ -101,7 +114,6 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
                 {user.role}
               </span>
 
-              {/* Joined date */}
               <span className="text-white/30 text-xs font-mono">
                 {user.created_at
                   ? format(new Date(user.created_at), 'MMM dd, yyyy')
@@ -113,7 +125,7 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
       </div>
 
       <p className="text-white/15 text-[10px] font-mono uppercase tracking-widest">
-        Data fetched via Supabase service role key — server-side only
+        {config.footerNote ?? 'Data fetched via Supabase service role key — server-side only'}
       </p>
     </div>
   )

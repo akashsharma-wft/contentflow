@@ -1,11 +1,6 @@
+// sanity/schemaTypes/documents/page.ts
 import { defineType, defineField } from 'sanity'
 
-// DOCUMENT: Page
-// The core page builder document. Every CMS-driven page on the site has one of these.
-// The slug determines the URL. The sections[] array determines what appears on the page.
-// Admin can add, remove, and reorder sections freely from Studio.
-// Access is controlled via isPublic + adminOnly flags.
-// Language is managed by the @sanity/document-internationalization plugin.
 export const pageType = defineType({
   name: 'page',
   title: 'Page',
@@ -68,16 +63,17 @@ export const pageType = defineType({
     // ── Layout toggles ────────────────────────────────────────────────
     defineField({
       name: 'showNavbar',
-      title: 'Show Navbar?',
+      title: 'Show public Navbar?',
       group: 'settings',
+      description: 'Show the public-facing Navbar on this page.',
       type: 'boolean',
       initialValue: true,
     }),
     defineField({
       name: 'showSidebar',
-      title: 'Show Sidebar?',
+      title: 'Show Sidebar Layout?',
       group: 'settings',
-      description: 'Only applies to authenticated pages inside the dashboard layout.',
+      description: 'If ON, page renders inside the authenticated dashboard sidebar layout instead of the public layout.',
       type: 'boolean',
       initialValue: false,
     }),
@@ -91,7 +87,6 @@ export const pageType = defineType({
       initialValue: true,
     }),
 
-    // ── Page sections (the page builder array) ────────────────────────
     // ── Page sections (the page builder array) ────────────────────────
     defineField({
       name: 'sections',
@@ -139,6 +134,13 @@ export const pageType = defineType({
         { type: 'contactSection' },
         { type: 'authHeroSection' },
         { type: 'notFoundSection' },
+
+        // ── App pages (each page = one marker block) ──────────────────────
+        { type: 'postsPageSection' },
+        { type: 'analyticsPageSection' },
+        { type: 'settingsPageSection' },
+        { type: 'billingPageSection' },
+        { type: 'adminPageSection' },
       ],
     }),
 
@@ -173,12 +175,14 @@ export const pageType = defineType({
       slug: 'slug.current',
       language: 'language',
       isPublic: 'isPublic',
+      showSidebar: 'showSidebar',
     },
-    prepare({ title, slug, language, isPublic }) {
+    prepare({ title, slug, language, isPublic, showSidebar }) {
       const lang = language?.toUpperCase() ?? '—'
+      const layout = showSidebar ? '🖥 Dashboard' : '🌐 Public'
       return {
         title: title ?? 'Untitled',
-        subtitle: `${lang} · /${slug ?? '…'} · ${isPublic ? '🌐 Public' : '🔒 Protected'}`,
+        subtitle: `${lang} · /${slug ?? '…'} · ${isPublic ? '🌐 Public' : '🔒 Protected'} · ${layout}`,
       }
     },
   },

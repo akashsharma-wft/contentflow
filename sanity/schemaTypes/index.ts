@@ -1,6 +1,7 @@
+// sanity/schemaTypes/index.ts
 import { postType } from './post'
 import { pageType } from './documents/page'
-import { siteConfig, authConfig } from './singletons'
+import { siteConfig, authConfig, postsPageConfig, analyticsConfig, settingsPageConfig, billingPageConfig, adminPageConfig } from './singletons'
 import {
   // EXISTING
   heroSection,
@@ -36,6 +37,12 @@ import {
   contactSection,
   authHeroSection,
   notFoundSection,
+  // APP PAGE MARKER BLOCKS
+  postsPageSection,
+  analyticsPageSection,
+  settingsPageSection,
+  billingPageSection,
+  adminPageSection,
 } from './blocks'
 
 // PRIMITIVE FIELD TYPES (used inside blocks)
@@ -47,18 +54,21 @@ export {
   videoEmbedSchema,
 } from './primitives'
 
-// Singletons (siteConfig, authConfig) are excluded from the 'create new' menu
-// via the Structure Builder in sanity.config.ts — they are singleton documents.
 export const schemaTypes = [
-  // ── Documents ──────────────────────────────────────────────────────
+  // ── Documents ──────────────────────────────────────────────────────────────
   postType,
   pageType,
 
-  // ── Singletons ─────────────────────────────────────────────────────
+  // ── Singletons ─────────────────────────────────────────────────────────────
   siteConfig,
   authConfig,
+  postsPageConfig,
+  analyticsConfig,
+  settingsPageConfig,
+  billingPageConfig,
+  adminPageConfig,
 
-  // ── EXISTING BLOCK TYPES ───────────────────────────────────────────
+  // ── EXISTING BLOCK TYPES ───────────────────────────────────────────────────
   heroSection,
   featuredPostsSection,
   recentPostsSection,
@@ -67,13 +77,13 @@ export const schemaTypes = [
   richTextSection,
   formSection,
 
-  // ── NEW BLOCK TYPES: Layout ────────────────────────────────────────
+  // ── NEW BLOCK TYPES: Layout ────────────────────────────────────────────────
   gridSection,
   columnsSection,
   spacerSection,
   dividerSection,
 
-  // ── NEW BLOCK TYPES: Content ───────────────────────────────────────
+  // ── NEW BLOCK TYPES: Content ───────────────────────────────────────────────
   headingSection,
   featureListSection,
   testimonialsSection,
@@ -87,7 +97,7 @@ export const schemaTypes = [
   bannerSection,
   tabsSection,
 
-  // ── NEW BLOCK TYPES: Media & Interactive ──────────────────────────
+  // ── NEW BLOCK TYPES: Media & Interactive ──────────────────────────────────
   imageSection,
   gallerySection,
   videoSection,
@@ -95,4 +105,11 @@ export const schemaTypes = [
   contactSection,
   authHeroSection,
   notFoundSection,
+
+  // ── APP PAGE MARKER BLOCKS ─────────────────────────────────────────────────
+  postsPageSection,
+  analyticsPageSection,
+  settingsPageSection,
+  billingPageSection,
+  adminPageSection,
 ]

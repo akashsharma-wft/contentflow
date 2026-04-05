@@ -1,3 +1,4 @@
+// sections/SectionRenderer.tsx
 /**
  * SectionRenderer — registry pattern for CMS-driven page sections.
  * Maps Sanity _type strings → React components.
@@ -12,7 +13,7 @@
 
 import type { SanitySection } from '@/types/sanity'
 
-// ── Existing sections ──────────────────────────────────────────────────────────
+// ── Existing public sections ───────────────────────────────────────────────────
 import { HeroSection } from './HeroSection'
 import { CtaSection } from './CtaSection'
 import { FeaturedPostsSection } from './FeaturedPostsSection'
@@ -20,8 +21,6 @@ import { RecentPostsSection } from './RecentPostsSection'
 import { RichTextSection } from './RichTextSection'
 import { StatsSection } from './StatsSection'
 import { FormSection } from './FormSection'
-
-// ── New sections ───────────────────────────────────────────────────────────────
 import { GridSection } from './GridSection'
 import {
   HeadingSection,
@@ -45,6 +44,13 @@ import { CarouselSection } from './CarouselSection'
 import { TableSection } from './TableSection'
 import { AuthHeroSection } from './AuthHeroSection'
 
+// ── App page sections (each is a server component that fetches its own config) ─
+import { PostsPageSection } from './PostsPageSection'
+import { AnalyticsSection } from './AnalyticsSection'
+import { SettingsSection } from './SettingsSection'
+import { BillingSection } from './BillingSection'
+import { AdminSection } from './AdminSection'
+
 interface SectionRendererProps {
   sections: SanitySection[]
   lang?: string
@@ -61,7 +67,7 @@ export async function SectionRenderer({ sections, lang = 'en' }: SectionRenderer
         const s = section as AnySection
 
         switch (section._type) {
-          // ── Existing ──────────────────────────────────────────────────────
+          // ── Existing public sections ───────────────────────────────────────
           case 'heroSection':            return <HeroSection key={key} section={s} />
           case 'ctaSection':             return <CtaSection key={key} section={s} />
           case 'featuredPostsSection':   return <FeaturedPostsSection key={key} section={s} lang={lang} />
@@ -97,9 +103,17 @@ export async function SectionRenderer({ sections, lang = 'en' }: SectionRenderer
 
           // ── Interactive / Auth ────────────────────────────────────────────
           case 'newsletterSection':      return <NewsletterSection key={key} section={s} />
-          case 'contactSection':         return null // Handled separately — requires server action
+          case 'contactSection':         return null
           case 'authHeroSection':        return <AuthHeroSection key={key} section={s} />
           case 'notFoundSection':        return <NotFoundSection key={key} section={s} />
+
+          // ── App page sections ─────────────────────────────────────────────
+          // Each fetches its own singleton config server-side
+          case 'postsPageSection':       return <PostsPageSection key={key} />
+          case 'analyticsPageSection':   return <AnalyticsSection key={key} />
+          case 'settingsPageSection':    return <SettingsSection key={key} />
+          case 'billingPageSection':     return <BillingSection key={key} />
+          case 'adminPageSection':       return <AdminSection key={key} />
 
           default:
             if (process.env.NODE_ENV === 'development') {

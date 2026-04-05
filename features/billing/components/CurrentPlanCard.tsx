@@ -1,3 +1,4 @@
+// features/billing/components/CurrentPlanCard.tsx
 'use client'
 
 import { useState } from 'react'
@@ -12,10 +13,20 @@ interface CurrentPlanCardProps {
   cancelAt?: string | null
   onUpgrade: () => void
   isLoading: boolean
+  currentPlanLabel?: string
+  manageLabel?: string
+  cancelLabel?: string
+  reactivateLabel?: string
+  upgradeLabel?: string
 }
 
 export function CurrentPlanCard({
-  tier, isCancelling, cancelAt, onUpgrade, isLoading
+  tier, isCancelling, cancelAt, onUpgrade, isLoading,
+  currentPlanLabel = 'Current Plan',
+  manageLabel = 'Manage subscription',
+  cancelLabel = 'Cancel',
+  reactivateLabel = 'Reactivate',
+  upgradeLabel = 'Upgrade to Pro',
 }: CurrentPlanCardProps) {
   const isPro = tier === 'pro'
   const { user } = useUser()
@@ -48,7 +59,7 @@ export function CurrentPlanCard({
     <>
       <div className="bg-[#13141c] border border-white/5 rounded-2xl p-5">
         <p className="text-white/30 text-[10px] uppercase tracking-widest font-mono mb-3">
-          Current Plan
+          {currentPlanLabel}
         </p>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
@@ -72,7 +83,7 @@ export function CurrentPlanCard({
                   disabled={isLoading}
                   className="px-4 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/60 hover:text-white text-sm rounded-lg transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {isCancelling ? 'Reactivate' : 'Manage subscription'}
+                  {isCancelling ? reactivateLabel : manageLabel}
                 </button>
                 {!isCancelling && (
                   <button
@@ -80,7 +91,7 @@ export function CurrentPlanCard({
                     disabled={isLoading}
                     className="px-4 py-2 bg-transparent border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm rounded-lg transition-all cursor-pointer disabled:opacity-50"
                   >
-                    Cancel
+                    {cancelLabel}
                   </button>
                 )}
               </>
@@ -90,7 +101,7 @@ export function CurrentPlanCard({
                 disabled={isLoading}
                 className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
               >
-                {isLoading ? 'Loading...' : 'Upgrade to Pro'}
+                {isLoading ? 'Loading...' : upgradeLabel}
               </button>
             )}
           </div>
@@ -102,8 +113,8 @@ export function CurrentPlanCard({
             <p className="text-amber-300/80 text-xs leading-relaxed">
               Your Pro access continues until{' '}
               <span className="font-semibold text-amber-300">{cancelAt}</span>.
-              After that, your account reverts to Free and excess posts will be moved to drafts.
-              Click <span className="font-semibold">Reactivate</span> to continue Pro.
+              After that, your account reverts to Free. Click{' '}
+              <span className="font-semibold">Reactivate</span> to continue Pro.
             </p>
           </div>
         )}
