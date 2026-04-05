@@ -9,7 +9,13 @@ export const postsPageSection = defineType({
   name: 'postsPageSection',
   title: 'Posts Page',
   type: 'object',
-  fields: [],
+  fields: [
+    {
+      name: 'marker',
+      type: 'string',
+      hidden: true,
+    },
+  ],
   preview: { prepare: () => ({ title: '📄 Posts Page Content' }) },
 })
 
@@ -17,7 +23,13 @@ export const analyticsPageSection = defineType({
   name: 'analyticsPageSection',
   title: 'Analytics Page',
   type: 'object',
-  fields: [],
+  fields: [
+    {
+      name: 'marker',
+      type: 'string',
+      hidden: true,
+    },
+  ],
   preview: { prepare: () => ({ title: '📊 Analytics Page Content' }) },
 })
 
@@ -25,7 +37,13 @@ export const settingsPageSection = defineType({
   name: 'settingsPageSection',
   title: 'Settings Page',
   type: 'object',
-  fields: [],
+  fields: [
+    {
+      name: 'marker',
+      type: 'string',
+      hidden: true,
+    },
+  ],
   preview: { prepare: () => ({ title: '⚙️ Settings Page Content' }) },
 })
 
@@ -33,7 +51,13 @@ export const billingPageSection = defineType({
   name: 'billingPageSection',
   title: 'Billing Page',
   type: 'object',
-  fields: [],
+  fields: [
+    {
+      name: 'marker',
+      type: 'string',
+      hidden: true,
+    },
+  ],
   preview: { prepare: () => ({ title: '💳 Billing Page Content' }) },
 })
 
@@ -41,6 +65,12 @@ export const adminPageSection = defineType({
   name: 'adminPageSection',
   title: 'Admin Page',
   type: 'object',
-  fields: [],
+  fields: [
+    {
+      name: 'marker',
+      type: 'string',
+      hidden: true,
+    },
+  ],
   preview: { prepare: () => ({ title: '🛡️ Admin Page Content' }) },
 })
