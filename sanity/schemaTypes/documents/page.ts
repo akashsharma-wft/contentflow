@@ -92,6 +92,7 @@ export const pageType = defineType({
     }),
 
     // ── Page sections (the page builder array) ────────────────────────
+    // ── Page sections (the page builder array) ────────────────────────
     defineField({
       name: 'sections',
       title: 'Page Sections',
@@ -99,13 +100,45 @@ export const pageType = defineType({
       description: 'Add, remove, and reorder sections. Each section is a configurable block.',
       type: 'array',
       of: [
+        // ── Existing ──────────────────────────────────────────────────────
         { type: 'heroSection' },
+        { type: 'ctaSection' },
         { type: 'featuredPostsSection' },
         { type: 'recentPostsSection' },
-        { type: 'ctaSection' },
-        { type: 'statsSection' },
         { type: 'richTextSection' },
+        { type: 'statsSection' },
         { type: 'formSection' },
+
+        // ── Layout ────────────────────────────────────────────────────────
+        { type: 'gridSection' },
+        { type: 'columnsSection' },
+        { type: 'spacerSection' },
+        { type: 'dividerSection' },
+
+        // ── Content ───────────────────────────────────────────────────────
+        { type: 'headingSection' },
+        { type: 'featureListSection' },
+        { type: 'testimonialsSection' },
+        { type: 'faqSection' },
+        { type: 'pricingSection' },
+        { type: 'teamSection' },
+        { type: 'logoBarSection' },
+        { type: 'carouselSection' },
+        { type: 'tableSection' },
+        { type: 'timelineSection' },
+        { type: 'bannerSection' },
+        { type: 'tabsSection' },
+
+        // ── Media ─────────────────────────────────────────────────────────
+        { type: 'imageSection' },
+        { type: 'gallerySection' },
+        { type: 'videoSection' },
+
+        // ── Interactive / Auth ────────────────────────────────────────────
+        { type: 'newsletterSection' },
+        { type: 'contactSection' },
+        { type: 'authHeroSection' },
+        { type: 'notFoundSection' },
       ],
     }),
 
