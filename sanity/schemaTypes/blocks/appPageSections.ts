@@ -1,5 +1,5 @@
 // sanity/schemaTypes/blocks/appPageSections.ts
-// Marker blocks for app pages (posts, analytics, settings, billing, admin).
+// Marker blocks for app pages (posts, analytics, settings, billing, admin, login, signup, post-detail).
 // These blocks have no editable fields — all copy comes from their
 // corresponding singleton config documents. They exist purely to tell
 // the SectionRenderer which page component to render.
@@ -73,4 +73,46 @@ export const adminPageSection = defineType({
     },
   ],
   preview: { prepare: () => ({ title: '🛡️ Admin Page Content' }) },
+})
+
+export const loginPageSection = defineType({
+  name: 'loginPageSection',
+  title: 'Login Page',
+  type: 'object',
+  fields: [
+    {
+      name: 'marker',
+      type: 'string',
+      hidden: true,
+    },
+  ],
+  preview: { prepare: () => ({ title: '🔐 Login Page Content' }) },
+})
+
+export const signupPageSection = defineType({
+  name: 'signupPageSection',
+  title: 'Signup Page',
+  type: 'object',
+  fields: [
+    {
+      name: 'marker',
+      type: 'string',
+      hidden: true,
+    },
+  ],
+  preview: { prepare: () => ({ title: '📝 Signup Page Content' }) },
+})
+
+export const postDetailPageSection = defineType({
+  name: 'postDetailPageSection',
+  title: 'Post Detail Page',
+  type: 'object',
+  fields: [
+    {
+      name: 'marker',
+      type: 'string',
+      hidden: true,
+    },
+  ],
+  preview: { prepare: () => ({ title: '📰 Post Detail Page Content' }) },
 })

@@ -4,7 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LanguageSwitcher } from './LanguageSwitcher'
-import type { SanitySiteConfig, NavLink } from '@/types/sanity'
+import { APP_NAV_ITEMS, filterNavItems, localizeHref } from '@/lib/navigation'
+import { useUser } from '@/hooks/useUser'
+import type { SanitySiteConfig } from '@/types/sanity'
 
 const LANG_CODES = ['en', 'hi', 'kn'] as const
 type LangCode = (typeof LANG_CODES)[number]
@@ -19,14 +21,6 @@ function parseCurrentLang(pathname: string): LangCode {
   return 'en'
 }
 
-function buildNavUrl(lang: LangCode, item: NavLink): string {
-  if (item.slug) {
-    if (item.slug === 'home') return lang === 'en' ? '/' : `/${lang}`
-    return lang === 'en' ? `/${item.slug}` : `/${lang}/${item.slug}`
-  }
-  return item.href ?? '/'
-}
-
 interface Props {
   siteConfig: SanitySiteConfig | null
 }
@@ -34,12 +28,17 @@ interface Props {
 export function Navbar({ siteConfig }: Props) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { profile } = useUser()
 
   if (SUPPRESS_ROUTES.some((route) => pathname.startsWith(route))) return null
 
+  // Only show navbar on home page (/ or /{lang})
+  const isHomePage = pathname === '/' || (LANG_CODES as readonly string[]).includes(pathname.slice(1))
+  if (!isHomePage) return null
+
   const currentLang = parseCurrentLang(pathname)
   const siteName = siteConfig?.siteName ?? 'ContentFlow'
-  const navItems = siteConfig?.publicNav ?? []
+  const navItems = filterNavItems(APP_NAV_ITEMS, profile?.role)
 
   const closeMobile = () => setMobileOpen(false)
 
@@ -80,15 +79,13 @@ export function Navbar({ siteConfig }: Props) {
           {/* Center: nav links — desktop only */}
           {navItems.length > 0 && (
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item, i) => {
-                const url = buildNavUrl(currentLang, item)
+              {navItems.map((item) => {
+                const url = localizeHref(item.href, currentLang)
                 const isActive = pathname === url || (url !== '/' && pathname.startsWith(url))
                 return (
                   <Link
-                    key={item.slug ?? item.href ?? i}
+                    key={item.href}
                     href={url}
-                    target={item.openInNewTab ? '_blank' : undefined}
-                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
                     className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                       isActive ? 'text-white bg-white/8' : 'text-white/50 hover:text-white hover:bg-white/5'
                     }`}
@@ -148,15 +145,13 @@ export function Navbar({ siteConfig }: Props) {
                 <LanguageSwitcher />
               </div>
 
-              {navItems.map((item, i) => {
-                const url = buildNavUrl(currentLang, item)
+              {navItems.map((item) => {
+                const url = localizeHref(item.href, currentLang)
                 const isActive = pathname === url || (url !== '/' && pathname.startsWith(url))
                 return (
                   <Link
-                    key={item.slug ?? item.href ?? i}
+                    key={item.href}
                     href={url}
-                    target={item.openInNewTab ? '_blank' : undefined}
-                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
                     onClick={closeMobile}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
                       isActive ? 'text-white bg-white/8' : 'text-white/50 hover:text-white hover:bg-white/5'

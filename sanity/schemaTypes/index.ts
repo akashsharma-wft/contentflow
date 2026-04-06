@@ -1,7 +1,7 @@
 // sanity/schemaTypes/index.ts
 import { postType } from './post'
 import { pageType } from './documents/page'
-import { siteConfig, authConfig, postsPageConfig, analyticsConfig, settingsPageConfig, billingPageConfig, adminPageConfig } from './singletons'
+import { siteConfig, authConfig, postsPageConfig, analyticsConfig, settingsPageConfig, billingPageConfig, adminPageConfig, loginPageConfig, signupPageConfig, postDetailPageConfig } from './singletons'
 import {
   // EXISTING
   heroSection,
@@ -36,6 +36,8 @@ import {
   newsletterSection,
   contactSection,
   authHeroSection,
+  loginSection,
+  signupSection,
   notFoundSection,
   // APP PAGE MARKER BLOCKS
   postsPageSection,
@@ -43,6 +45,9 @@ import {
   settingsPageSection,
   billingPageSection,
   adminPageSection,
+  loginPageSection,
+  signupPageSection,
+  postDetailPageSection,
 } from './blocks'
 
 // PRIMITIVE FIELD TYPES (used inside blocks)
@@ -67,6 +72,9 @@ export const schemaTypes = [
   settingsPageConfig,
   billingPageConfig,
   adminPageConfig,
+  loginPageConfig,
+  signupPageConfig,
+  postDetailPageConfig,
 
   // ── EXISTING BLOCK TYPES ───────────────────────────────────────────────────
   heroSection,
@@ -104,6 +112,8 @@ export const schemaTypes = [
   newsletterSection,
   contactSection,
   authHeroSection,
+  loginSection,
+  signupSection,
   notFoundSection,
 
   // ── APP PAGE MARKER BLOCKS ─────────────────────────────────────────────────
@@ -112,4 +122,7 @@ export const schemaTypes = [
   settingsPageSection,
   billingPageSection,
   adminPageSection,
+  loginPageSection,
+  signupPageSection,
+  postDetailPageSection,
 ]

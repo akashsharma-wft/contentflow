@@ -7,6 +7,7 @@ import { SidebarNav } from './SidebarNav'
 import { SidebarFooter } from './SidebarFooter'
 import { CollapsedSignOut } from './CollapsedSignOut'
 import { cn } from '@/lib/utils'
+import type { SidebarNavLink } from '@/types/sanity'
 
 function StatusBar() {
   return (
@@ -20,8 +21,13 @@ function StatusBar() {
   )
 }
 
-export function Sidebar() {
-  const sidebarOpen   = useUIStore((state) => state.sidebarOpen)
+interface SidebarProps {
+  navItems: SidebarNavLink[]
+  lang?: string
+}
+
+export function Sidebar({ navItems, lang = 'en' }: SidebarProps) {
+  const sidebarOpen = useUIStore((state) => state.sidebarOpen)
   const toggleSidebar = useUIStore((state) => state.toggleSidebar)
 
   return (
@@ -32,29 +38,25 @@ export function Sidebar() {
         sidebarOpen ? 'w-[220px]' : 'w-[56px]'
       )}
     >
-      {/* ── Logo + collapse toggle ── */}
+      {/* Logo + collapse toggle */}
       <div className={cn(
         'flex items-center py-4 px-3 shrink-0',
         sidebarOpen ? 'justify-between' : 'justify-center'
       )}>
-        {sidebarOpen && <SidebarLogo />}
-
+        {sidebarOpen && <SidebarLogo lang={lang} />}
         <button
           onClick={toggleSidebar}
           className="text-white/30 hover:text-white/70 hover:bg-white/5 p-1.5 rounded-lg transition-all cursor-pointer shrink-0"
           aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
         >
-          {sidebarOpen
-            ? <PanelLeftClose size={15} />
-            : <PanelLeftOpen  size={15} />
-          }
+          {sidebarOpen ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}
         </button>
       </div>
 
-      {/* ── Nav items — icons only when collapsed ── */}
-      <SidebarNav collapsed={!sidebarOpen} />
+      {/* Nav items */}
+      <SidebarNav collapsed={!sidebarOpen} navItems={navItems} lang={lang} />
 
-      {/* ── Footer: full when open, icon-only when collapsed ── */}
+      {/* Footer */}
       {sidebarOpen ? (
         <>
           <SidebarFooter />

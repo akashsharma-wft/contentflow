@@ -20,6 +20,7 @@
 
 import 'dotenv/config'
 import { createClient } from '@sanity/client'
+import { APP_NAV_ITEMS } from '../lib/navigation'
 
 const client = createClient({
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
@@ -51,6 +52,7 @@ async function deleteAll() {
     'post', 'page',
     'siteConfig', 'authConfig',
     'postsPageConfig', 'analyticsConfig', 'settingsPageConfig', 'billingPageConfig', 'adminPageConfig',
+    'loginPageConfig', 'signupPageConfig', 'postDetailPageConfig',
   ]
 
   for (const type of types) {
@@ -70,35 +72,22 @@ async function deleteAll() {
 
 async function seedSiteConfig() {
   console.log('\n⚙️  Seeding siteConfig...')
+  
+  // Convert APP_NAV_ITEMS to Sanity format with _key fields
+  const sidebarNav = APP_NAV_ITEMS.map((item, i) => ({
+    ...item,
+    _key: `snav-${i}`,
+  }))
+
   await client.createOrReplace({
     _id: 'siteConfig',
     _type: 'siteConfig',
     siteName: 'ContentFlow',
     tagline: 'CMS-driven publishing for engineering teams.',
-    publicNav: [
-      { _key: 'nav-home',     label: 'Home',     slug: 'home' },
-      { _key: 'nav-about',    label: 'About',    slug: 'about' },
-      { _key: 'nav-features', label: 'Features', slug: 'features' },
-      { _key: 'nav-pricing',  label: 'Pricing',  slug: 'pricing' },
-      { _key: 'nav-studio',   label: 'Studio',   href: '/studio', openInNewTab: false },
-    ],
-    sidebarNav: [
-      { _key: 'snav-posts',      label: 'Posts',      href: '/posts',      icon: 'FileText',   adminOnly: false },
-      { _key: 'snav-analytics',  label: 'Analytics',  href: '/analytics',  icon: 'BarChart3',  adminOnly: false },
-      { _key: 'snav-settings',   label: 'Settings',   href: '/settings',   icon: 'Settings',   adminOnly: false },
-      { _key: 'snav-billing',    label: 'Billing',    href: '/billing',    icon: 'CreditCard', adminOnly: false },
-      { _key: 'snav-admin',      label: 'Admin',      href: '/admin',      icon: 'Shield',     adminOnly: true  },
-    ],
+    publicNav: [], // Navbar now uses APP_NAV_ITEMS directly
+    sidebarNav,
     footerTagline: 'A next-generation CMS platform dedicated to storytelling and editorial excellence.',
-    footerLinks: [
-      { _key: 'fl-home',     label: 'Home',          href: '/' },
-      { _key: 'fl-about',    label: 'About',         href: '/about' },
-      { _key: 'fl-features', label: 'Features',      href: '/features' },
-      { _key: 'fl-pricing',  label: 'Pricing',       href: '/pricing' },
-      { _key: 'fl-studio',   label: 'Studio',        href: '/studio' },
-      { _key: 'fl-privacy',  label: 'Privacy Policy',href: '/privacy' },
-      { _key: 'fl-terms',    label: 'Terms',         href: '/terms' },
-    ],
+    footerLinks: [], // Footer now uses APP_NAV_ITEMS directly
     copyright: `© ${new Date().getFullYear()} ContentFlow. All rights reserved.`,
   })
   console.log('   ✓ siteConfig')
@@ -246,79 +235,89 @@ async function seedAppPageSingletons() {
     emptyLabel: 'No users found',
   })
   console.log('   ✓ adminPageConfig')
+
+  await client.createOrReplace({
+    _id: 'loginPageConfig',
+    _type: 'loginPageConfig',
+    heading: 'CMS-driven publishing for engineering teams.',
+    subheading: 'Welcome back',
+    badge: 'ENGINEERING FIRST',
+  })
+  console.log('   ✓ loginPageConfig')
+
+  await client.createOrReplace({
+    _id: 'signupPageConfig',
+    _type: 'signupPageConfig',
+    heading: 'CMS-driven publishing for engineering teams.',
+    subheading: 'Create your account',
+    badge: 'ENGINEERING FIRST',
+  })
+  console.log('   ✓ signupPageConfig')
+
+  await client.createOrReplace({
+    _id: 'postDetailPageConfig',
+    _type: 'postDetailPageConfig',
+    showComments: false,
+    relatedPostsCount: 3,
+  })
+  console.log('   ✓ postDetailPageConfig')
 }
 
 // ─── 5. APP PAGE DOCUMENTS ────────────────────────────────────────────────────
-// These are `page` documents that the [lang]/page.tsx resolver will match
-// by slug. Each contains a single marker block that SectionRenderer renders.
+// These are `page` documents for the 8 app page types in 3 languages = 24 pages total.
+// Each contains a single marker block that SectionRenderer renders.
+// Access control (isPublic, adminOnly) is configurable per page in Sanity.
 
 async function seedAppPageDocuments() {
-  console.log('\n🗂  Seeding app page documents...')
+  console.log('\n🗂  Seeding 24 app page documents (8 types × 3 languages)...')
 
-  const appPages = [
-    {
-      _id: 'page-posts-en',
-      slug: 'posts',
-      title: 'Posts',
-      section: 'postsPageSection',
-      isPublic: false,
-      adminOnly: false,
-    },
-    {
-      _id: 'page-analytics-en',
-      slug: 'analytics',
-      title: 'Analytics',
-      section: 'analyticsPageSection',
-      isPublic: false,
-      adminOnly: false,
-    },
-    {
-      _id: 'page-settings-en',
-      slug: 'settings',
-      title: 'Settings',
-      section: 'settingsPageSection',
-      isPublic: false,
-      adminOnly: false,
-    },
-    {
-      _id: 'page-billing-en',
-      slug: 'billing',
-      title: 'Billing',
-      section: 'billingPageSection',
-      isPublic: false,
-      adminOnly: false,
-    },
-    {
-      _id: 'page-admin-en',
-      slug: 'admin',
-      title: 'Admin',
-      section: 'adminPageSection',
-      isPublic: false,
-      adminOnly: true,
-    },
+  type Lang = 'en' | 'hi' | 'kn'
+  const LANGS: Lang[] = ['en', 'hi', 'kn']
+
+  // Define all 8 page types with their default access control
+  const pageTypes = [
+    // ── Public pages ───────────────────────────────────────────────────────
+    { slug: 'login', title: { en: 'Login', hi: 'लॉगिन', kn: 'ಲಾಗಿನ್' }, section: 'loginPageSection', isPublic: true, adminOnly: false, showSidebar: false },
+    { slug: 'signup', title: { en: 'Signup', hi: 'साइन अप', kn: 'ಸೈನ್ ಅಪ್' }, section: 'signupPageSection', isPublic: true, adminOnly: false, showSidebar: false },
+    { slug: 'posts', title: { en: 'Posts', hi: 'पोस्ट', kn: 'ಪೋಸ್ಟ್‌ಗಳು' }, section: 'postsPageSection', isPublic: true, adminOnly: false, showSidebar: true },
+    { slug: 'post-detail', title: { en: 'Post Detail', hi: 'पोस्ट विवरण', kn: 'ಪೋಸ್ಟ್ ಪ್ರಸ್ತಾವನೆ' }, section: 'postDetailPageSection', isPublic: true, adminOnly: false, showSidebar: false },
+
+    // ── Private (authenticated) pages ───────────────────────────────────────
+    { slug: 'settings', title: { en: 'Settings', hi: 'सेटिंग्स', kn: 'ಸೆಟ್ಟಿಂಗ್‌ಗಳು' }, section: 'settingsPageSection', isPublic: false, adminOnly: false, showSidebar: true },
+    { slug: 'billing', title: { en: 'Billing', hi: 'बिलिंग', kn: 'ಬಿಲಿಂಗ್‌' }, section: 'billingPageSection', isPublic: false, adminOnly: false, showSidebar: true },
+
+    // ── Admin only pages ───────────────────────────────────────────────────
+    { slug: 'admin', title: { en: 'Admin', hi: 'एडमिन', kn: 'ಆಡ್ಮಿನ್' }, section: 'adminPageSection', isPublic: false, adminOnly: true, showSidebar: true },
+    { slug: 'analytics', title: { en: 'Analytics', hi: 'विश्लेषण', kn: 'ವಿಶ್ಲೇಷಣ' }, section: 'analyticsPageSection', isPublic: false, adminOnly: true, showSidebar: true },
   ]
 
-  for (const page of appPages) {
-    await client.createOrReplace({
-      _id: page._id,
-      _type: 'page',
-      title: page.title,
-      slug: { _type: 'slug', current: page.slug },
-      language: 'en',
-      isPublic: page.isPublic,
-      adminOnly: page.adminOnly,
-      showNavbar: false,
-      showSidebar: true,
-      enablePosthogTracking: true,
-      sections: [
-        {
-          _type: page.section,
-          _key: key(`${page.slug}-section`),
-        },
-      ],
-    })
-    console.log(`   ✓ page: /${page.slug}`)
+  let pageCount = 0
+  for (const pageType of pageTypes) {
+    for (const lang of LANGS) {
+      const pageId = `page-${pageType.slug}-${lang}`
+      await client.createOrReplace({
+        _id: pageId,
+        _type: 'page',
+        title: pageType.title[lang],
+        slug: { _type: 'slug', current: pageType.slug },
+        language: lang,
+        isPublic: pageType.isPublic,
+        adminOnly: pageType.adminOnly,
+        showNavbar: false,
+        showSidebar: pageType.showSidebar,
+        enablePosthogTracking: true,
+        sections: [
+          {
+            _type: pageType.section,
+            _key: key(`${pageType.slug}-section`),
+          },
+        ],
+      })
+      pageCount++
+    }
   }
+  console.log(`   ✓ Created ${pageCount} pages (8 types × 3 languages)`)
+  console.log('     Access control (isPublic, adminOnly, showSidebar) is configurable per page in Sanity')
 }
 
 // ─── 6. PUBLIC PAGES (home, about, features, pricing, 404) ───────────────────
@@ -519,8 +518,8 @@ async function main() {
   await seedSiteConfig()
   await seedAuthConfig()
   await seedAppPageSingletons()
-  await seedPublicPages()
   await seedAppPageDocuments()
+  await seedPublicPages()
   await seedPosts()
 
   console.log('\n✅ Seed complete!')

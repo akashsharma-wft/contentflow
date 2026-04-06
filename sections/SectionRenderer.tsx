@@ -43,6 +43,9 @@ import { TimelineSection, TeamSection, LogoBarSection } from './TimelineTeamLogo
 import { CarouselSection } from './CarouselSection'
 import { TableSection } from './TableSection'
 import { AuthHeroSection } from './AuthHeroSection'
+import { LoginSection } from './LoginSection'
+import { SignupSection } from './SignupSection'
+import { PostDetailPageSection } from './PostDetailPageSection'
 
 // ── App page sections (each is a server component that fetches its own config) ─
 import { PostsPageSection } from './PostsPageSection'
@@ -50,6 +53,7 @@ import { AnalyticsSection } from './AnalyticsSection'
 import { SettingsSection } from './SettingsSection'
 import { BillingSection } from './BillingSection'
 import { AdminSection } from './AdminSection'
+
 
 interface SectionRendererProps {
   sections: SanitySection[]
@@ -105,6 +109,8 @@ export async function SectionRenderer({ sections, lang = 'en' }: SectionRenderer
           case 'newsletterSection':      return <NewsletterSection key={key} section={s} />
           case 'contactSection':         return null
           case 'authHeroSection':        return <AuthHeroSection key={key} section={s} />
+          case 'loginSection':           return <LoginSection key={key} section={s} />
+          case 'signupSection':          return <SignupSection key={key} section={s} />
           case 'notFoundSection':        return <NotFoundSection key={key} section={s} />
 
           // ── App page sections ─────────────────────────────────────────────
@@ -114,6 +120,9 @@ export async function SectionRenderer({ sections, lang = 'en' }: SectionRenderer
           case 'settingsPageSection':    return <SettingsSection key={key} />
           case 'billingPageSection':     return <BillingSection key={key} />
           case 'adminPageSection':       return <AdminSection key={key} />
+          case 'loginPageSection':       return <LoginSection key={key} section={s} />
+          case 'signupPageSection':      return <SignupSection key={key} section={s} />
+          case 'postDetailPageSection':  return <PostDetailPageSection key={key} section={s} />
 
           default:
             if (process.env.NODE_ENV === 'development') {

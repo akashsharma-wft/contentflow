@@ -133,6 +133,8 @@ export const pageType = defineType({
         { type: 'newsletterSection' },
         { type: 'contactSection' },
         { type: 'authHeroSection' },
+        { type: 'loginSection' },
+        { type: 'signupSection' },
         { type: 'notFoundSection' },
 
         // ── App pages (each page = one marker block) ──────────────────────
@@ -141,6 +143,9 @@ export const pageType = defineType({
         { type: 'settingsPageSection' },
         { type: 'billingPageSection' },
         { type: 'adminPageSection' },
+        { type: 'loginPageSection' },
+        { type: 'signupPageSection' },
+        { type: 'postDetailPageSection' },
       ],
     }),
 

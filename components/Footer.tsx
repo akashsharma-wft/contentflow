@@ -1,25 +1,48 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { APP_NAV_ITEMS, ICON_MAP, filterNavItems, localizeHref } from '@/lib/navigation'
+import { useUser } from '@/hooks/useUser'
 import type { SanitySiteConfig } from '@/types/sanity'
 
 interface Props {
   siteConfig: SanitySiteConfig | null
 }
 
+const LANG_CODES = ['en', 'hi', 'kn'] as const
+
+function parseCurrentLang(pathname: string): string {
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length === 0) return 'en'
+  const first = segments[0]
+  if ((LANG_CODES as readonly string[]).includes(first)) return first
+  return 'en'
+}
+
 export function Footer({ siteConfig }: Props) {
+  const pathname = usePathname()
+  const { profile } = useUser()
+
+  // Only show footer on home page (/ or /{lang})
+  const isHomePage = pathname === '/' || (LANG_CODES as readonly string[]).includes(pathname.slice(1))
+  if (!isHomePage) return null
+
+  const currentLang = parseCurrentLang(pathname)
   const siteName = siteConfig?.siteName ?? 'ContentFlow'
   const tagline = siteConfig?.footerTagline ?? 'A next-generation CMS platform dedicated to the art of storytelling and editorial excellence. Built for modern publishers.'
-  const footerLinks = siteConfig?.footerLinks ?? []
   const copyright = siteConfig?.copyright ?? `© ${new Date().getFullYear()} ContentFlow. All rights reserved.`
+  const navItems = filterNavItems(APP_NAV_ITEMS, profile?.role)
 
   return (
-    <footer className="w-full border-t border-white/6 bg-[#0d0e14] mt-10 mb-16 md:mb-0">
+    <footer className="w-full border-t border-white/6 bg-[#0d0e14] mb-16 md:mb-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
 
         {/* Top row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-10 pb-12 border-b border-white/6">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-10 pb-12 border-b border-white/6">
 
           {/* Brand column */}
-          <div className="col-span-2 sm:col-span-1 space-y-4">
+          <div className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-md bg-indigo-500 flex items-center justify-center shrink-0">
                 <svg width="13" height="13" viewBox="0 0 18 18" fill="none">
@@ -68,55 +91,20 @@ export function Footer({ siteConfig }: Props) {
             </div>
           </div>
 
-          {/* Platform column */}
-          <div className="space-y-4">
-            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest">Platform</p>
-            <ul className="space-y-2.5">
-              {['Home', 'Features', 'Pricing'].map((label) => (
-                <li key={label}>
-                  <Link href="/" className="text-white/50 text-sm hover:text-white transition-colors">
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company column */}
-          <div className="space-y-4">
-            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest">Company</p>
-            <ul className="space-y-2.5">
-              {['About', 'Careers', 'Contact'].map((label) => (
-                <li key={label}>
-                  <Link href="/" className="text-white/50 text-sm hover:text-white transition-colors">
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Legal column — uses footerLinks from Sanity, falls back to defaults */}
-          <div className="space-y-4">
-            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest">Legal</p>
-            <ul className="space-y-2.5">
-              {footerLinks.length > 0 ? (
-                footerLinks.map((link) => (
-                  <li key={link.label}>
-                    <Link href={link.href ?? '#'} className="text-white/50 text-sm hover:text-white transition-colors">
-                      {link.label}
+          {/* Navigation column */}
+          <div className="sm:col-span-3">
+            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-4">Navigation</p>
+            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2.5">
+              {navItems.map((item) => {
+                const url = localizeHref(item.href, currentLang)
+                return (
+                  <li key={item.href}>
+                    <Link href={url} className="text-white/50 text-sm hover:text-white transition-colors">
+                      {item.label}
                     </Link>
                   </li>
-                ))
-              ) : (
-                ['Privacy Policy', 'Terms of Service'].map((label) => (
-                  <li key={label}>
-                    <Link href="#" className="text-white/50 text-sm hover:text-white transition-colors">
-                      {label}
-                    </Link>
-                  </li>
-                ))
-              )}
+                )
+              })}
             </ul>
           </div>
         </div>

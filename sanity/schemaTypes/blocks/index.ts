@@ -21,7 +21,7 @@ export {
 // ──── NEW SECTIONS (Media & Interactive) ────────────────────────────────────
 export {
   imageSection, gallerySection, videoSection, newsletterSection,
-  contactSection, authHeroSection, notFoundSection,
+  contactSection, authHeroSection, loginSection, signupSection, notFoundSection,
 } from './mediaAndInteractiveBlocks'
 
 // ──── APP PAGE MARKER BLOCKS ─────────────────────────────────────────────────
@@ -31,4 +31,7 @@ export {
   settingsPageSection,
   billingPageSection,
   adminPageSection,
+  loginPageSection,
+  signupPageSection,
+  postDetailPageSection,
 } from './appPageSections'

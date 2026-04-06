@@ -1,68 +1,45 @@
 // features/dashboard/components/SidebarNav.tsx
-// Client component — receives nav items as props (fetched server-side by
-// DashboardLayout or Sidebar's parent). Uses pathname for active state.
+// Client component — receives nav items as props from server component.
+// Builds language-aware hrefs so /hi/posts, /kn/billing etc work correctly.
 'use client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  LayoutDashboard, FileText, BarChart3,
-  Settings, CreditCard, Shield,
-  type LucideIcon,
-} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/hooks/useUser'
+import { APP_NAV_ITEMS, ICON_MAP, filterNavItems, localizeHref } from '@/lib/navigation'
+import type { SidebarNavLink } from '@/types/sanity'
 
-// Map of Lucide icon name strings → components
-const ICON_MAP: Record<string, LucideIcon> = {
-  LayoutDashboard,
-  FileText,
-  BarChart3,
-  Settings,
-  CreditCard,
-  Shield,
-}
-
-interface NavItem {
-  label: string
-  href: string
-  icon?: string
-  adminOnly?: boolean
-}
+const FALLBACK_NAV: SidebarNavLink[] = APP_NAV_ITEMS
 
 interface SidebarNavProps {
   collapsed: boolean
-  navItems?: NavItem[]
+  navItems?: SidebarNavLink[]
+  lang?: string
 }
 
-// Fallback nav if siteConfig hasn't loaded yet or seed hasn't run
-const FALLBACK_NAV: NavItem[] = [
-  { label: 'Posts',     href: '/posts',     icon: 'FileText',     adminOnly: false },
-  { label: 'Analytics', href: '/analytics', icon: 'BarChart3',    adminOnly: false },
-  { label: 'Settings',  href: '/settings',  icon: 'Settings',     adminOnly: false },
-  { label: 'Billing',   href: '/billing',   icon: 'CreditCard',   adminOnly: false },
-  { label: 'Admin',     href: '/admin',     icon: 'Shield',       adminOnly: true  },
-]
+/** Check if a path is active, accounting for language prefix */
+function isPathActive(pathname: string, localizedHref: string): boolean {
+  return pathname === localizedHref || pathname.startsWith(`${localizedHref}/`)
+}
 
-export function SidebarNav({ collapsed, navItems }: SidebarNavProps) {
+export function SidebarNav({ collapsed, navItems, lang = 'en' }: SidebarNavProps) {
   const pathname = usePathname()
   const { profile } = useUser()
 
-  const items = (navItems ?? FALLBACK_NAV).filter((item) => {
-    if (item.adminOnly && profile?.role !== 'admin') return false
-    return true
-  })
+  const items = filterNavItems(navItems ?? FALLBACK_NAV, profile?.role)
 
   return (
     <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
       {items.map(({ label, href, icon }) => {
-        const Icon = (icon && ICON_MAP[icon]) ? ICON_MAP[icon] : FileText
-        const isActive = pathname === href || pathname.startsWith(`${href}/`)
+        const Icon = (icon && ICON_MAP[icon]) ? ICON_MAP[icon] : ICON_MAP.FileText
+        const localizedHref = localizeHref(href, lang)
+        const isActive = isPathActive(pathname, localizedHref)
 
         return (
           <Link
             key={href}
-            href={href}
+            href={localizedHref}
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer group',
               isActive

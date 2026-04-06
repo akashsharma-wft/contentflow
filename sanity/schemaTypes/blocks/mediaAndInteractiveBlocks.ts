@@ -242,6 +242,83 @@ export const authHeroSection = defineType({
   },
 })
 
+// ─── LOGIN SECTION ────────────────────────────────────────────────────────────
+// Full login page (left panel + right form panel). Uses existing LoginForm component.
+export const loginSection = defineType({
+  name: 'loginSection',
+  title: 'Login Section (Full Page)',
+  type: 'object',
+  description: 'Renders the complete login page with left panel branding and right panel login form.',
+  fields: [
+    defineField({
+      name: 'heading',
+      title: 'Left Panel Headline',
+      type: 'string',
+      initialValue: 'CMS-driven publishing for engineering teams.',
+      description: 'The headline shown on the left branding panel (overrides authConfig)',
+    }),
+    defineField({
+      name: 'subheading',
+      title: 'Right Panel Subheading',
+      type: 'string',
+      initialValue: 'Welcome back',
+      description: 'Text above the login form (overrides authConfig)',
+    }),
+    defineField({
+      name: 'badge',
+      title: 'Badge Label',
+      type: 'string',
+      description: 'Small badge shown on left panel (optional)',
+    }),
+  ],
+  preview: {
+    select: { heading: 'heading' },
+    prepare: (value: PrepareValue) => ({
+      title: 'Login Section',
+      subtitle: value.heading || 'Full login page',
+    }),
+  },
+})
+
+// ─── SIGNUP SECTION ───────────────────────────────────────────────────────────
+// Full signup page (left panel + right form panel). Uses existing SignupForm component.
+export const signupSection = defineType({
+  name: 'signupSection',
+  title: 'Signup Section (Full Page)',
+  type: 'object',
+  description: 'Renders the complete signup page with left panel branding and right panel signup form.',
+  fields: [
+    defineField({
+      name: 'heading',
+      title: 'Left Panel Headline',
+      type: 'string',
+      initialValue: 'CMS-driven publishing for engineering teams.',
+      description: 'The headline shown on the left branding panel (overrides authConfig)',
+    }),
+    defineField({
+      name: 'subheading',
+      title: 'Right Panel Subheading',
+      type: 'string',
+      initialValue: 'Create your account',
+      description: 'Text above the signup form (overrides authConfig)',
+    }),
+    defineField({
+      name: 'badge',
+      title: 'Badge Label',
+      type: 'string',
+      initialValue: 'ENGINEERING FIRST',
+      description: 'Small badge shown on left panel (optional)',
+    }),
+  ],
+  preview: {
+    select: { heading: 'heading' },
+    prepare: (value: PrepareValue) => ({
+      title: 'Signup Section',
+      subtitle: value.heading || 'Full signup page',
+    }),
+  },
+})
+
 // ─── 404 / NOT FOUND SECTION ──────────────────────────────────────────────────
 export const notFoundSection = defineType({
   name: 'notFoundSection',

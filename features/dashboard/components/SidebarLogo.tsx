@@ -1,9 +1,16 @@
 import Link from 'next/link'
 
-export function SidebarLogo() {
+interface SidebarLogoProps {
+  lang?: string
+}
+
+export function SidebarLogo({ lang = 'en' }: SidebarLogoProps) {
+  // Build language-aware href
+  const href = lang === 'en' ? '/dashboard' : `/${lang}/dashboard`
+  
   return (
     <Link
-      href="/dashboard"
+      href={href}
       className="flex items-center gap-2.5 hover:opacity-80 transition-opacity cursor-pointer"
     >
       <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shrink-0">

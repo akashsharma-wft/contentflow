@@ -1,8 +1,10 @@
 // app/layout.tsx
-// Root layout. Navbar + Footer are shown for public pages only.
-// Sidebar-layout pages (posts, settings, billing, admin, analytics) render
-// their own navigation via DashboardLayout, so Navbar/Footer must not appear.
-// We detect this by checking the pathname via a client component wrapper.
+// Root layout — ONLY global providers, fonts, Toaster, VisualEditing.
+// NO Navbar or Footer here. Each page/layout is responsible for its own chrome.
+// - Public home page: renders Navbar inside its own layout
+// - Auth pages (login/signup): no nav
+// - Dashboard pages (posts/settings/billing/analytics/admin): DashboardLayout
+// - Studio: no nav
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { draftMode } from 'next/headers'
@@ -10,10 +12,10 @@ import { VisualEditing } from 'next-sanity/visual-editing'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/sonner'
-import { Navbar } from '@/components/Navbar'
-import { Footer } from '@/components/Footer'
 import { sanityClient } from '@/lib/sanity/client'
 import { SITE_CONFIG_QUERY } from '@/lib/sanity/queries'
+import { Navbar } from '@/components/Navbar'
+import { Footer } from '@/components/Footer'
 import type { SanitySiteConfig } from '@/types/sanity'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
     default: 'ContentFlow — Engineering CMS',
     template: '%s — ContentFlow',
   },
-  description: 'CMS-driven publishing platform for engineering teams. API-first, high-performance content delivery.',
+  description: 'CMS-driven publishing platform for engineering teams.',
   keywords: ['CMS', 'content management', 'engineering', 'API-first'],
   authors: [{ name: 'Weframetech' }],
   creator: 'Weframetech',
@@ -43,68 +45,25 @@ export const metadata: Metadata = {
   },
 }
 
-// These path prefixes use DashboardLayout which has its own nav — suppress root Navbar/Footer
-const DASHBOARD_PATHS = ['/posts', '/analytics', '/settings', '/billing', '/admin']
-
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [{ isEnabled: isDraftMode }, siteConfig] = await Promise.all([
-    draftMode(),
-    sanityClient.fetch<SanitySiteConfig | null>(SITE_CONFIG_QUERY),
-  ])
+  const { isEnabled: isDraftMode } = await draftMode()
+  const siteConfig = await sanityClient.fetch<SanitySiteConfig | null>(SITE_CONFIG_QUERY)
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        {/*
-          Navbar and Footer are rendered via a client wrapper that checks the pathname.
-          This avoids showing them on dashboard pages while keeping them on public pages.
-        */}
-        <PublicShell siteConfig={siteConfig}>
-          <Providers>{children}</Providers>
-        </PublicShell>
+        <Providers>
+          <Navbar siteConfig={siteConfig} />
+            <main>{children}</main>
+          <Footer siteConfig={siteConfig} />
+        </Providers>
         <Toaster richColors position="top-right" />
         {isDraftMode && <VisualEditing />}
       </body>
     </html>
-  )
-}
-
-// ── PublicShell — conditionally renders Navbar + Footer ──────────────────────
-// This is a server component. We use the fact that layout.tsx has access to
-// the headers to determine the pathname at request time.
-import { headers } from 'next/headers'
-
-async function PublicShell({
-  children,
-  siteConfig,
-}: {
-  children: React.ReactNode
-  siteConfig: SanitySiteConfig | null
-}) {
-  const headersList = await headers()
-  const pathname = headersList.get('x-pathname') ?? headersList.get('x-invoke-path') ?? ''
-
-  // Check if this is a dashboard (sidebar) page
-  const isDashboardPage = DASHBOARD_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + '/')
-  )
-
-  // Also hide for auth pages and studio
-  const hidePublicNav = isDashboardPage ||
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/signup') ||
-    pathname.startsWith('/studio') ||
-    pathname.startsWith('/auth')
-
-  return (
-    <>
-      {!hidePublicNav && <Navbar siteConfig={siteConfig} />}
-      {children}
-      {!hidePublicNav && <Footer siteConfig={siteConfig} />}
-    </>
   )
 }

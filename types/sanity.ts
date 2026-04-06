@@ -421,6 +421,22 @@ export type AuthHeroSection = {
   mode?: 'signin' | 'signup' | 'both'
 }
 
+export type LoginSection = {
+  _type: 'loginSection'
+  _key: string
+  heading?: string
+  subheading?: string
+  badge?: string | null
+}
+
+export type SignupSection = {
+  _type: 'signupSection'
+  _key: string
+  heading?: string
+  subheading?: string
+  badge?: string | null
+}
+
 export type NotFoundSection = {
   _type: 'notFoundSection'
   _key: string
@@ -500,6 +516,8 @@ export type SanitySection =
   | NewsletterSection
   | ContactSection
   | AuthHeroSection
+  | LoginSection
+  | SignupSection
   | NotFoundSection
   | GridSection
   | ColumnsSection
@@ -510,6 +528,9 @@ export type SanitySection =
   | SettingsPageSection
   | BillingPageSection
   | AdminPageSection
+  | LoginPageSection
+  | SignupPageSection
+  | PostDetailPageSection
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
@@ -695,3 +716,6 @@ export type AnalyticsPageSection = { _type: 'analyticsPageSection'; _key: string
 export type SettingsPageSection = { _type: 'settingsPageSection'; _key: string }
 export type BillingPageSection  = { _type: 'billingPageSection';  _key: string }
 export type AdminPageSection    = { _type: 'adminPageSection';    _key: string }
+export type LoginPageSection    = { _type: 'loginPageSection';    _key: string; heading?: string; description?: string }
+export type SignupPageSection   = { _type: 'signupPageSection';   _key: string; heading?: string; description?: string }
+export type PostDetailPageSection = { _type: 'postDetailPageSection'; _key: string; heading?: string; description?: string }
