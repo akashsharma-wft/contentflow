@@ -2,6 +2,7 @@
 import { defineConfig } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
+import { presentationTool } from 'sanity/presentation'
 import { documentInternationalization } from '@sanity/document-internationalization'
 import {
   DocumentTextIcon,
@@ -158,6 +159,18 @@ export default defineConfig({
     visionTool({
       defaultApiVersion: '2024-01-01',
       defaultDataset: process.env.NEXT_PUBLIC_SANITY_DATASET ?? 'production',
+    }),
+
+    // ── Presentation Tool (live preview) ──────────────────────────────
+    presentationTool({
+      previewUrl: {
+        origin: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
+        preview: '/',
+        previewMode: {
+          enable: '/api/preview/enable',
+          disable: '/api/preview/disable',
+        },
+      },
     }),
 
     // ── Document Internationalization (en / hi / kn) ──────────────────

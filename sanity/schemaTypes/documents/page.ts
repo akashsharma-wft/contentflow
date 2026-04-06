@@ -44,38 +44,37 @@ export const pageType = defineType({
 
     // ── Access control ────────────────────────────────────────────────
     defineField({
-      name: 'isPublic',
-      title: 'Public page?',
+      name: 'access',
+      title: 'Page Access',
       group: 'settings',
-      description: 'If ON, accessible without login. If OFF, users must be authenticated.',
-      type: 'boolean',
-      initialValue: true,
-    }),
-    defineField({
-      name: 'adminOnly',
-      title: 'Admin only?',
-      group: 'settings',
-      description: 'If ON, only users with role=admin can access this page.',
-      type: 'boolean',
-      initialValue: false,
+      type: 'string',
+      options: {
+        list: [
+          { title: '🌐 Public — anyone can visit', value: 'public' },
+          { title: '🔒 Member — must be logged in', value: 'member' },
+          { title: '🛡️ Admin — admin role only', value: 'admin' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'public',
+      validation: (Rule) => Rule.required(),
     }),
 
-    // ── Layout toggles ────────────────────────────────────────────────
+    // ── Layout ────────────────────────────────────────────────────────
     defineField({
-      name: 'showNavbar',
-      title: 'Show public Navbar?',
+      name: 'layout',
+      title: 'Layout',
       group: 'settings',
-      description: 'Show the public-facing Navbar on this page.',
-      type: 'boolean',
-      initialValue: true,
-    }),
-    defineField({
-      name: 'showSidebar',
-      title: 'Show Sidebar Layout?',
-      group: 'settings',
-      description: 'If ON, page renders inside the authenticated dashboard sidebar layout instead of the public layout.',
-      type: 'boolean',
-      initialValue: false,
+      type: 'string',
+      options: {
+        list: [
+          { title: '🌐 Public (Navbar + Footer)', value: 'public' },
+          { title: '🖥 Dashboard (Sidebar)', value: 'dashboard' },
+          { title: '🔑 Auth (No chrome)', value: 'auth' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'public',
     }),
 
     // ── Integrations ──────────────────────────────────────────────────
@@ -179,15 +178,25 @@ export const pageType = defineType({
       title: 'title',
       slug: 'slug.current',
       language: 'language',
-      isPublic: 'isPublic',
-      showSidebar: 'showSidebar',
+      access: 'access',
+      layout: 'layout',
     },
-    prepare({ title, slug, language, isPublic, showSidebar }) {
-      const lang = language?.toUpperCase() ?? '—'
-      const layout = showSidebar ? '🖥 Dashboard' : '🌐 Public'
+    prepare({ title, slug, language, access, layout }) {
+      const accessEmoji =
+        access === 'public'
+          ? '🌐'
+          : access === 'member'
+            ? '🔒'
+            : '🛡️'
+      const layoutEmoji =
+        layout === 'dashboard'
+          ? '🖥'
+          : layout === 'auth'
+            ? '🔑'
+            : '🌐'
       return {
         title: title ?? 'Untitled',
-        subtitle: `${lang} · /${slug ?? '…'} · ${isPublic ? '🌐 Public' : '🔒 Protected'} · ${layout}`,
+        subtitle: `${language?.toUpperCase() ?? '—'} · /${slug ?? '…'} · ${accessEmoji} ${access} · ${layoutEmoji} ${layout}`,
       }
     },
   },

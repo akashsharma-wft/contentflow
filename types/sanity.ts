@@ -540,11 +540,8 @@ export type SanityPage = {
   title: string
   slug: { current: string }
   language?: string
-  isPublic?: boolean
-  adminOnly?: boolean
-  showNavbar?: boolean
-  showSidebar?: boolean
-  requireAdmin?: boolean
+  access?: 'public' | 'member' | 'admin'
+  layout?: 'public' | 'dashboard' | 'auth'
   enablePosthogTracking?: boolean
   sections?: SanitySection[]
   seoTitle?: string

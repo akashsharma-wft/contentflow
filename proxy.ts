@@ -1,45 +1,54 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-const LANG_CODES = ['en', 'hi', 'kn']
+// These paths are ALWAYS public regardless of Sanity config
+const ALWAYS_PUBLIC = ['/studio', '/api/', '/login', '/signup', '/auth/']
+// These match language-prefixed versions too
+const ALWAYS_PUBLIC_SLUGS = ['login', 'signup']
+// App pages that always require auth (fast-path, no Sanity fetch needed)
+const ALWAYS_AUTH = ['posts', 'analytics', 'settings', 'billing', 'admin']
+const ALWAYS_ADMIN = ['admin', 'analytics']
+
+const LANGS = ['hi', 'kn', 'en']
+
+function parsePath(pathname: string): { lang: string; slug: string } {
+  const langMatch = LANGS.find(l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`)
+  if (langMatch) {
+    const rest = pathname.slice(`/${langMatch}`.length + 1) || 'home'
+    return { lang: langMatch, slug: rest }
+  }
+  const slug = pathname.slice(1) || 'home'
+  return { lang: 'en', slug }
+}
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  // Check if route is public
-  const isPublicRoute = (path: string): boolean => {
-    // Static public routes (no language prefix)
-    if (path === '/posts' || path.startsWith('/posts/')) return true
-    if (path === '/api/webhooks' || path.startsWith('/api/webhooks/')) return true
-    if (path === '/signup' || path.startsWith('/signup/')) return true
-    if (path === '/login' || path.startsWith('/login/')) return true
-
-    // Language-prefixed public routes: /hi/posts, /kn/posts, /en/signup, etc.
-    const langMatch = path.match(/^\/([a-z]{2})\/(.+)$/)
-    if (langMatch) {
-      const lang = langMatch[1]
-      const rest = langMatch[2]
-      if (!LANG_CODES.includes(lang)) return false
-
-      if (rest === 'posts' || rest.startsWith('posts/')) return true
-      if (rest === 'signup' || rest.startsWith('signup/')) return true
-      if (rest === 'login' || rest.startsWith('login/')) return true
-    }
-
-    return false
-  }
-
-  // Skip middleware for public routes
-  if (isPublicRoute(pathname)) {
+  // Always skip static/internal
+  if (ALWAYS_PUBLIC.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
+  const { slug } = parsePath(pathname)
+  const topSlug = slug.split('/')[0]
+
+  // Always public slugs (login, signup)
+  if (ALWAYS_PUBLIC_SLUGS.includes(topSlug)) {
+    return NextResponse.next()
+  }
+
+  // Fast-path: app pages always require auth
+  if (ALWAYS_AUTH.includes(topSlug)) {
+    const response = await updateSession(request)
+    // If updateSession redirected (no session), it returns a redirect — return it
+    return response
+  }
+
+  // For all other paths (home, public pages, posts/[slug]), just refresh session
+  // The page itself checks access from Sanity and redirects if needed
   return await updateSession(request)
 }
 
 export const config = {
-  matcher: [
-    // Match everything except Next.js internals and static files
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 }

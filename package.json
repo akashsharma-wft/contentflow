@@ -17,6 +17,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@sanity/document-internationalization": "^4.1.1",
     "@sanity/image-url": "^1.2.0",
+    "@sanity/presentation": "^2.0.0",
     "@sanity/vision": "^4.22.0",
     "@stripe/stripe-js": "^8.11.0",
     "@supabase/ssr": "^0.9.0",

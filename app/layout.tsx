@@ -1,7 +1,7 @@
 // app/layout.tsx
 // Root layout — ONLY global providers, fonts, Toaster, VisualEditing.
 // NO Navbar or Footer here. Each page/layout is responsible for its own chrome.
-// - Public home page: renders Navbar inside its own layout
+// - Public home page: renders Navbar/Footer inside its own layout
 // - Auth pages (login/signup): no nav
 // - Dashboard pages (posts/settings/billing/analytics/admin): DashboardLayout
 // - Studio: no nav
@@ -12,11 +12,6 @@ import { VisualEditing } from 'next-sanity/visual-editing'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/sonner'
-import { sanityClient } from '@/lib/sanity/client'
-import { SITE_CONFIG_QUERY } from '@/lib/sanity/queries'
-import { Navbar } from '@/components/Navbar'
-import { Footer } from '@/components/Footer'
-import type { SanitySiteConfig } from '@/types/sanity'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -51,15 +46,12 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const { isEnabled: isDraftMode } = await draftMode()
-  const siteConfig = await sanityClient.fetch<SanitySiteConfig | null>(SITE_CONFIG_QUERY)
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <Providers>
-          <Navbar siteConfig={siteConfig} />
-            <main>{children}</main>
-          <Footer siteConfig={siteConfig} />
+          {children}
         </Providers>
         <Toaster richColors position="top-right" />
         {isDraftMode && <VisualEditing />}

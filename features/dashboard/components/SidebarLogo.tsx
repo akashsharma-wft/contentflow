@@ -6,7 +6,7 @@ interface SidebarLogoProps {
 
 export function SidebarLogo({ lang = 'en' }: SidebarLogoProps) {
   // Build language-aware href
-  const href = lang === 'en' ? '/dashboard' : `/${lang}/dashboard`
+  const href = lang === 'en' ? '/' : `/${lang}`
   
   return (
     <Link

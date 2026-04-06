@@ -277,18 +277,18 @@ async function seedAppPageDocuments() {
   // Define all 8 page types with their default access control
   const pageTypes = [
     // ── Public pages ───────────────────────────────────────────────────────
-    { slug: 'login', title: { en: 'Login', hi: 'लॉगिन', kn: 'ಲಾಗಿನ್' }, section: 'loginPageSection', isPublic: true, adminOnly: false, showSidebar: false },
-    { slug: 'signup', title: { en: 'Signup', hi: 'साइन अप', kn: 'ಸೈನ್ ಅಪ್' }, section: 'signupPageSection', isPublic: true, adminOnly: false, showSidebar: false },
-    { slug: 'posts', title: { en: 'Posts', hi: 'पोस्ट', kn: 'ಪೋಸ್ಟ್‌ಗಳು' }, section: 'postsPageSection', isPublic: true, adminOnly: false, showSidebar: true },
-    { slug: 'post-detail', title: { en: 'Post Detail', hi: 'पोस्ट विवरण', kn: 'ಪೋಸ್ಟ್ ಪ್ರಸ್ತಾವನೆ' }, section: 'postDetailPageSection', isPublic: true, adminOnly: false, showSidebar: false },
+    { slug: 'login', title: { en: 'Login', hi: 'लॉगिन', kn: 'ಲಾಗಿನ್' }, section: 'loginPageSection', access: 'public', layout: 'auth' },
+    { slug: 'signup', title: { en: 'Signup', hi: 'साइन अप', kn: 'ಸೈನ್ ಅಪ್' }, section: 'signupPageSection', access: 'public', layout: 'auth' },
+    { slug: 'posts', title: { en: 'Posts', hi: 'पोस्ट', kn: 'ಪೋಸ್ಟ್‌ಗಳು' }, section: 'postsPageSection', access: 'member', layout: 'dashboard' },
+    { slug: 'post-detail', title: { en: 'Post Detail', hi: 'पोस्ट विवरण', kn: 'ಪೋಸ್ಟ್ ಪ್ರಸ್ತಾವನೆ' }, section: 'postDetailPageSection', access: 'public', layout: 'public' },
 
     // ── Private (authenticated) pages ───────────────────────────────────────
-    { slug: 'settings', title: { en: 'Settings', hi: 'सेटिंग्स', kn: 'ಸೆಟ್ಟಿಂಗ್‌ಗಳು' }, section: 'settingsPageSection', isPublic: false, adminOnly: false, showSidebar: true },
-    { slug: 'billing', title: { en: 'Billing', hi: 'बिलिंग', kn: 'ಬಿಲಿಂಗ್‌' }, section: 'billingPageSection', isPublic: false, adminOnly: false, showSidebar: true },
+    { slug: 'settings', title: { en: 'Settings', hi: 'सेटिंग्स', kn: 'ಸೆಟ್ಟಿಂಗ್‌ಗಳು' }, section: 'settingsPageSection', access: 'member', layout: 'dashboard' },
+    { slug: 'billing', title: { en: 'Billing', hi: 'बिलिंग', kn: 'ಬಿಲಿಂಗ್‌' }, section: 'billingPageSection', access: 'member', layout: 'dashboard' },
 
     // ── Admin only pages ───────────────────────────────────────────────────
-    { slug: 'admin', title: { en: 'Admin', hi: 'एडमिन', kn: 'ಆಡ್ಮಿನ್' }, section: 'adminPageSection', isPublic: false, adminOnly: true, showSidebar: true },
-    { slug: 'analytics', title: { en: 'Analytics', hi: 'विश्लेषण', kn: 'ವಿಶ್ಲೇಷಣ' }, section: 'analyticsPageSection', isPublic: false, adminOnly: true, showSidebar: true },
+    { slug: 'admin', title: { en: 'Admin', hi: 'एडमिन', kn: 'ಆಡ್ಮಿನ್' }, section: 'adminPageSection', access: 'admin', layout: 'dashboard' },
+    { slug: 'analytics', title: { en: 'Analytics', hi: 'विश्लेषण', kn: 'ವಿಶ್ಲೇಷಣ' }, section: 'analyticsPageSection', access: 'admin', layout: 'dashboard' },
   ]
 
   let pageCount = 0
@@ -301,10 +301,8 @@ async function seedAppPageDocuments() {
         title: pageType.title[lang],
         slug: { _type: 'slug', current: pageType.slug },
         language: lang,
-        isPublic: pageType.isPublic,
-        adminOnly: pageType.adminOnly,
-        showNavbar: false,
-        showSidebar: pageType.showSidebar,
+        access: pageType.access,
+        layout: pageType.layout,
         enablePosthogTracking: true,
         sections: [
           {
@@ -317,7 +315,7 @@ async function seedAppPageDocuments() {
     }
   }
   console.log(`   ✓ Created ${pageCount} pages (8 types × 3 languages)`)
-  console.log('     Access control (isPublic, adminOnly, showSidebar) is configurable per page in Sanity')
+  console.log('     Access control (access, layout) is configurable per page in Sanity')
 }
 
 // ─── 6. PUBLIC PAGES (home, about, features, pricing, 404) ───────────────────
@@ -347,10 +345,8 @@ async function seedHomePage(lang: Lang) {
     title: titles[lang],
     slug: { _type: 'slug', current: 'home' },
     language: lang,
-    isPublic: true,
-    adminOnly: false,
-    showNavbar: true,
-    showSidebar: false,
+    access: 'public',
+    layout: 'public',
     enablePosthogTracking: true,
     seoTitle: `ContentFlow — ${headings[lang]}`,
     seoDescription: subheadings[lang].slice(0, 155),
@@ -423,10 +419,8 @@ async function seedPublicPages() {
         title: title[lang],
         slug: { _type: 'slug', current: slug },
         language: lang,
-        isPublic: true,
-        adminOnly: false,
-        showNavbar: true,
-        showSidebar: false,
+        access: 'public',
+        layout: 'public',
         enablePosthogTracking: true,
         sections: [
           {
