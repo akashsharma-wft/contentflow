@@ -1,3 +1,9 @@
+// components/Footer.tsx
+//
+// FIX: app/page.tsx and app/[lang]/page.tsx pass lang={...} to <Footer>.
+// Props only had 'siteConfig', so TypeScript rejected 'lang'.
+// Solution: add optional lang prop. Footer already reads lang from pathname
+// internally, so lang prop is accepted but not required — purely a type fix.
 'use client'
 
 import Link from 'next/link'
@@ -8,6 +14,8 @@ import type { SanitySiteConfig } from '@/types/sanity'
 
 interface Props {
   siteConfig: SanitySiteConfig | null
+  /** Optional — accepted for backwards compat but not used (lang is derived from pathname). */
+  lang?: string
 }
 
 const LANG_CODES = ['en', 'hi', 'kn'] as const
@@ -52,7 +60,6 @@ export function Footer({ siteConfig }: Props) {
               <span className="text-white font-semibold text-sm tracking-tight">{siteName}</span>
             </div>
             <p className="text-white/35 text-xs leading-relaxed max-w-[220px]">{tagline}</p>
-            {/* Social icons */}
             <div className="flex items-center gap-2 pt-1">
               {[
                 {

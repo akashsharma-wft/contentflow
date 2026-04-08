@@ -1,12 +1,13 @@
-/**
- * /[lang]/[slug] — localized content pages and posts
- *
- * Handles Hindi and Kannada content at /hi/slug and /kn/slug.
- * English content lives at /[slug] (handled by app/[lang]/page.tsx).
- *
- * ISR: revalidates every 60 seconds.
- * /en/slug → 301 redirect to /slug (canonical English)
- */
+// app/[lang]/[slug]/page.tsx
+//
+// Handles Hindi and Kannada content at /hi/slug and /kn/slug.
+// English content lives at /[slug] (handled by app/[lang]/page.tsx).
+//
+// FIX: Was using page.isPublic and page.adminOnly which no longer exist on SanityPage.
+// The schema was migrated to use page.access ('public'|'member'|'admin') and
+// page.layout ('public'|'dashboard'|'auth'). Updated access checks accordingly.
+// Also handles layout (dashboard/auth/public) consistently with other page files.
+
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -21,6 +22,7 @@ import {
   POST_BY_SLUG_AND_LANG_QUERY,
   ALL_POST_SLUGS_QUERY,
   POST_LANG_VARIANTS_QUERY,
+  SITE_CONFIG_QUERY,
 } from '@/lib/sanity/queries'
 import {
   SUPPORTED_LANGUAGES,
@@ -30,7 +32,10 @@ import {
 } from '@/lib/sanity/pageResolver'
 import { buildMetadata } from '@/lib/seo'
 import { SectionRenderer } from '@/sections/SectionRenderer'
-import type { SanityPage, SanityPost } from '@/types/sanity'
+import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
+import { Navbar } from '@/components/Navbar'
+import { Footer } from '@/components/Footer'
+import type { SanityPage, SanityPost, SanitySiteConfig } from '@/types/sanity'
 
 export const revalidate = 60
 
@@ -38,7 +43,18 @@ interface Props {
   params: Promise<{ lang: string; slug: string }>
 }
 
-// ─── Static params ─────────────────────────────────────────────────────────────
+// ── Access control helper (same as app/[lang]/page.tsx) ────────────────────────
+function getPageAccess(page: SanityPage) {
+  return {
+    requireAuth:  page.access === 'member' || page.access === 'admin',
+    requireAdmin: page.access === 'admin',
+    showSidebar:  page.layout === 'dashboard',
+    showNavbar:   page.layout === 'public' || !page.layout,
+    isAuth:       page.layout === 'auth',
+  }
+}
+
+// ── Static params ──────────────────────────────────────────────────────────────
 
 export async function generateStaticParams() {
   const [pageSlugs, postSlugs] = await Promise.all([
@@ -51,7 +67,7 @@ export async function generateStaticParams() {
     .map((s) => ({ lang: s.language, slug: s.slug }))
 }
 
-// ─── Metadata ─────────────────────────────────────────────────────────────────
+// ── Metadata ──────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, slug } = await params
@@ -74,7 +90,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildMetadata({ slug, lang, title, description, ogImage })
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function LocalizedPage({ params }: Props) {
   const { lang, slug } = await params
@@ -88,13 +104,16 @@ export default async function LocalizedPage({ params }: Props) {
   const page = await client.fetch<SanityPage | null>(PAGE_BY_SLUG_AND_LANG_QUERY, { slug, lang })
 
   if (page) {
-    if (!page.isPublic || page.adminOnly) {
+    const access = getPageAccess(page)
+
+    // Auth check — FIX: use access/layout instead of removed isPublic/adminOnly
+    if (access.requireAuth) {
       const supabase = await createSupabaseServer()
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) redirect(`/login?redirectTo=/${lang}/${slug}`)
 
-      if (page.adminOnly) {
+      if (access.requireAdmin) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
@@ -104,15 +123,47 @@ export default async function LocalizedPage({ params }: Props) {
       }
     }
 
+    const sections = page.sections ?? []
+
+    // Dashboard layout
+    if (access.showSidebar) {
+      return (
+        <DashboardLayout lang={lang}>
+          {sections.length > 0 ? (
+            <SectionRenderer sections={sections} lang={lang} />
+          ) : (
+            <div className="flex items-center justify-center h-64">
+              <p className="text-white/30 text-sm">This page has no sections yet.</p>
+            </div>
+          )}
+        </DashboardLayout>
+      )
+    }
+
+    // Auth layout (no chrome — login/signup)
+    if (access.isAuth) {
+      return sections.length > 0 ? (
+        <SectionRenderer sections={sections} lang={lang} />
+      ) : (
+        <div className="min-h-screen bg-[#0d0e14]" />
+      )
+    }
+
+    // Public layout (Navbar + Footer)
+    const siteConfig = await sanityClient.fetch<SanitySiteConfig | null>(
+      SITE_CONFIG_QUERY, {}, { next: { revalidate: 60 } }
+    )
     return (
       <div className="min-h-screen bg-[#0d0e14]">
-        {page.sections && page.sections.length > 0 ? (
-          <SectionRenderer sections={page.sections} lang={lang} />
+        <Navbar siteConfig={siteConfig} />
+        {sections.length > 0 ? (
+          <SectionRenderer sections={sections} lang={lang} />
         ) : (
-          <div className="flex items-center justify-center min-h-screen">
-            <p className="text-white/30 text-sm">This page has no sections yet.</p>
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <p className="text-white/30 text-sm">No sections configured for this page.</p>
           </div>
         )}
+        <Footer siteConfig={siteConfig} />
       </div>
     )
   }
@@ -124,11 +175,13 @@ export default async function LocalizedPage({ params }: Props) {
   const variants = await sanityClient.fetch<SlugEntry[]>(POST_LANG_VARIANTS_QUERY, { slug }, { next: { revalidate: 60 } })
   const variantMap = Object.fromEntries(variants.map((v) => [v.language, v.slug]))
 
+  const backLabel = lang === 'hi' ? '← वापस' : lang === 'kn' ? '← ಹಿಂದೆ' : '← Back'
+
   return (
     <main className="min-h-screen bg-[#0d0e14] text-white px-6 py-12 max-w-3xl mx-auto">
       <nav className="flex items-center justify-between mb-8 text-sm">
         <Link href={`/${lang}`} className="text-white/30 hover:text-white/70 transition-colors">
-          ← Back
+          {backLabel}
         </Link>
         <div className="flex items-center gap-2">
           {SUPPORTED_LANGUAGES.map((l) => {
@@ -145,7 +198,7 @@ export default async function LocalizedPage({ params }: Props) {
                     : 'text-white/30 hover:text-white/60'
                 }`}
               >
-                {LANG_LABELS[l as SupportedLang] ? l.toUpperCase() : l.toUpperCase()}
+                {LANG_LABELS[l as SupportedLang]?.toUpperCase() ?? l.toUpperCase()}
               </Link>
             )
           })}

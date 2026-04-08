@@ -1,3 +1,11 @@
+// components/Navbar.tsx
+//
+// FIX: app/page.tsx and app/[lang]/page.tsx pass lang={...} to <Navbar>.
+// The Props interface only had 'siteConfig', so TypeScript rejected 'lang'.
+// Solution: add optional lang prop. The component already reads the current
+// language from the pathname internally via parseCurrentLang(), so lang prop
+// is accepted but not needed — this purely fixes the TypeScript error without
+// changing any runtime behaviour.
 'use client'
 
 import { useState } from 'react'
@@ -23,6 +31,8 @@ function parseCurrentLang(pathname: string): LangCode {
 
 interface Props {
   siteConfig: SanitySiteConfig | null
+  /** Optional — accepted for backwards compat but not used (lang is derived from pathname). */
+  lang?: string
 }
 
 export function Navbar({ siteConfig }: Props) {
@@ -50,7 +60,6 @@ export function Navbar({ siteConfig }: Props) {
 
           {/* Left: hamburger (mobile) + logo */}
           <div className="flex items-center gap-3">
-            {/* Hamburger — mobile only */}
             <button
               onClick={() => setMobileOpen((o) => !o)}
               className="md:hidden flex flex-col gap-1.5 p-1 rounded-lg hover:bg-white/5 transition-colors"
@@ -61,7 +70,6 @@ export function Navbar({ siteConfig }: Props) {
               <span className={`block w-5 h-px bg-white/70 transition-transform duration-200 ${mobileOpen ? '-translate-y-2.5 -rotate-45' : ''}`} />
             </button>
 
-            {/* Logo */}
             <Link
               href={currentLang === 'en' ? '/' : `/${currentLang}`}
               className="flex items-center gap-2 shrink-0"
@@ -99,7 +107,6 @@ export function Navbar({ siteConfig }: Props) {
 
           {/* Right: search + language switcher + user */}
           <div className="flex items-center gap-2">
-            {/* Search icon */}
             <button
               className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
               aria-label="Search"
@@ -109,12 +116,10 @@ export function Navbar({ siteConfig }: Props) {
               </svg>
             </button>
 
-            {/* Language switcher — hidden on very small screens, shown md+ */}
             <div className="hidden sm:block">
               <LanguageSwitcher />
             </div>
 
-            {/* User icon — links to login */}
             <Link
               href="/login"
               className="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-500/15 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/25 transition-colors"
@@ -131,15 +136,12 @@ export function Navbar({ siteConfig }: Props) {
       {/* ── Mobile drawer ─────────────────────────────────────────────── */}
       {mobileOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
             onClick={closeMobile}
           />
-          {/* Drawer */}
           <div className="fixed top-14 left-0 bottom-0 z-50 w-72 bg-[#0d0e14] border-r border-white/8 flex flex-col md:hidden">
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-              {/* Language switcher in drawer */}
               <div className="px-2 py-3 mb-2 border-b border-white/6">
                 <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest mb-2">Language</p>
                 <LanguageSwitcher />
@@ -232,7 +234,7 @@ export function Navbar({ siteConfig }: Props) {
         </div>
       </nav>
 
-      {/* Bottom nav spacer on mobile so content isn't hidden behind it */}
+      {/* Bottom nav spacer on mobile */}
       <div className="h-16 md:hidden" />
     </>
   )

@@ -1,10 +1,11 @@
 // app/layout.tsx
-// Root layout — ONLY global providers, fonts, Toaster, VisualEditing.
-// NO Navbar or Footer here. Each page/layout is responsible for its own chrome.
-// - Public home page: renders Navbar/Footer inside its own layout
-// - Auth pages (login/signup): no nav
-// - Dashboard pages (posts/settings/billing/analytics/admin): DashboardLayout
-// - Studio: no nav
+//
+// Root layout — bare shell. NO global Navbar or Footer.
+// Each page is responsible for its own chrome based on page.layout from Sanity.
+//
+// FIX: next-sanity v11 moved VisualEditing out of the root package export.
+// Correct import is 'next-sanity/visual-editing', not 'next-sanity'.
+
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { draftMode } from 'next/headers'
@@ -23,7 +24,6 @@ export const metadata: Metadata = {
   description: 'CMS-driven publishing platform for engineering teams.',
   keywords: ['CMS', 'content management', 'engineering', 'API-first'],
   authors: [{ name: 'Weframetech' }],
-  creator: 'Weframetech',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
   openGraph: {
     type: 'website',
@@ -32,11 +32,6 @@ export const metadata: Metadata = {
     title: 'ContentFlow — Engineering CMS',
     description: 'CMS-driven publishing platform for engineering teams.',
     siteName: 'ContentFlow',
-  },
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.png',
-    apple: '/apple-touch-icon.png',
   },
 }
 
@@ -53,7 +48,12 @@ export default async function RootLayout({
         <Providers>
           {children}
         </Providers>
+
         <Toaster richColors position="top-right" />
+
+        {/* Visual editing overlays — only rendered when Draft Mode is active.
+            Reads stega-encoded field coordinates from rendered text and draws
+            blue borders + edit buttons that open the Studio field directly. */}
         {isDraftMode && <VisualEditing />}
       </body>
     </html>

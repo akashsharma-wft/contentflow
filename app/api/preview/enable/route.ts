@@ -1,28 +1,44 @@
-/**
- * /api/preview/enable
- *
- * Called by Sanity Presentation Tool to activate Next.js Draft Mode.
- * Redirects to the requested preview URL after enabling.
- */
+// app/api/preview/enable/route.ts
+//
+// Called by the Sanity Presentation Tool when you click the "Preview" button.
+// Enables Next.js Draft Mode so the site fetches draft documents.
+//
+// @sanity/preview-url-secret v4 exports validatePreviewUrl from the root.
+// The old sub-path imports (/next-app-router, /sanity-plugin) are gone.
+//
+// Flow:
+//   1. Presentation tool calls /api/preview/enable?sanityPreviewSecret=...&redirectTo=/
+//   2. validatePreviewUrl checks the secret against Sanity dataset
+//   3. draftMode().enable() sets the __prerender_bypass cookie
+//   4. Redirect to the page being previewed — it now fetches drafts
+
 import { draftMode } from 'next/headers'
 import { type NextRequest, NextResponse } from 'next/server'
+import { validatePreviewUrl } from '@sanity/preview-url-secret'
+import { createClient } from 'next-sanity'
+
+// Sanity client — used server-side ONLY to validate the preview secret token.
+// Needs a token with at least Viewer role to read the secret from the dataset.
+const sanityClientForPreview = createClient({
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
+  dataset:   process.env.NEXT_PUBLIC_SANITY_DATASET ?? 'production',
+  apiVersion: '2024-01-01',
+  useCdn:    false,
+  token:     process.env.SANITY_API_READ_TOKEN,
+})
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl
-  const secret = searchParams.get('secret')
-  const redirectUrl = searchParams.get('redirect') ?? '/'
+  const { isValid, redirectTo = '/' } = await validatePreviewUrl(
+    sanityClientForPreview,
+    req.url
+  )
 
-  // Validate the preview secret
-  const expectedSecret = process.env.SANITY_PREVIEW_SECRET
-  if (expectedSecret && secret !== expectedSecret) {
-    return NextResponse.json({ message: 'Invalid secret' }, { status: 401 })
+  if (!isValid) {
+    return new Response('Invalid preview secret', { status: 401 })
   }
 
-  // Enable Draft Mode — sets a cookie on the browser
   const dm = await draftMode()
   dm.enable()
 
-  // Redirect to the preview URL (must be same origin)
-  const target = new URL(redirectUrl, req.nextUrl.origin)
-  return NextResponse.redirect(target)
+  return NextResponse.redirect(new URL(redirectTo, req.url))
 }

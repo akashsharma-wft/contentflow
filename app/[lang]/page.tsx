@@ -1,25 +1,41 @@
-/**
- * /[lang] — handles two distinct cases at depth 1:
- *
- *   1. Language homepages  → /hi, /kn
- *      isSupportedLang(lang) && lang !== 'en'
- *      resolveContent('home', lang)
- *
- *   2. English slug pages  → /about, /posts, /settings, /billing...
- *      !isSupportedLang(lang) (everything else)
- *      resolveContent(lang, 'en')  ← lang param IS the slug here
- *
- * If page.layout = 'dashboard' → renders inside DashboardLayout (requires auth).
- * If page.layout = 'public' → renders with Navbar + Footer.
- * If page.layout = 'auth' → renders content only (no chrome).
- * ISR: revalidates every 60 seconds.
- */
+// app/[lang]/page.tsx
+//
+// Handles ALL routes at depth 1:
+//
+//   LANGUAGE HOMEPAGES:
+//     /hi  → LanguageHomePage lang='hi'  → resolves 'home' page in Hindi
+//     /kn  → LanguageHomePage lang='kn'  → resolves 'home' page in Kannada
+//
+//   ENGLISH SLUG PAGES (lang param IS the slug):
+//     /login    → resolves 'login' page   → loginSection renders auth form
+//     /signup   → resolves 'signup' page  → signupSection renders auth form
+//     /posts    → resolves 'posts' page   → postsPageSection renders posts UI
+//     /settings → resolves 'settings' page → settingsPageSection renders settings
+//     /billing  → resolves 'billing' page  → billingPageSection renders billing
+//     /admin    → resolves 'admin' page    → adminPageSection renders admin
+//     /analytics → resolves 'analytics' page → analyticsPageSection renders analytics
+//     /any-post-slug → falls through to post lookup
+//
+//   LOCALIZED SLUG PAGES (both lang AND slug present):
+//     /hi/login    → login page in Hindi
+//     /kn/posts    → posts page in Kannada  (sidebar + translated labels)
+//     /hi/about    → about page in Hindi
+//
+// MULTILINGUAL RULE:
+//   Every section receives lang={lang} and uses it to pick translated text from Sanity.
+//   If a page document doesn't exist in the requested language, it falls back to English.
+//
+// LIVE PREVIEW:
+//   Uses getSanityClient() which switches to draft perspective when Draft Mode is enabled.
+//   This makes the Presentation Tool work — edits in Studio instantly update the preview.
+
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { PortableText } from '@portabletext/react'
 import { createClient as createSupabaseServer } from '@/lib/supabase/server'
+import { getSanityClient } from '@/lib/sanity/server-client'
 import { sanityClient } from '@/lib/sanity/client'
 import {
   PAGE_BY_SLUG_AND_LANG_QUERY,
@@ -27,9 +43,9 @@ import {
   ALL_PAGE_SLUGS_QUERY,
   ALL_POST_SLUGS_QUERY,
   SITE_CONFIG_QUERY,
+  POST_LANG_VARIANTS_QUERY,
 } from '@/lib/sanity/queries'
 import {
-  resolveContent,
   isSupportedLang,
   SUPPORTED_LANGUAGES,
   LANG_LABELS,
@@ -38,7 +54,6 @@ import {
 } from '@/lib/sanity/pageResolver'
 import { buildMetadata } from '@/lib/seo'
 import { SectionRenderer } from '@/sections/SectionRenderer'
-import { PostsListing } from '@/components/PostsListing'
 import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
@@ -50,19 +65,21 @@ interface Props {
   params: Promise<{ lang: string }>
 }
 
-// ── Access control helper ──────────────────────────────────────────
+// ── Access control helper ──────────────────────────────────────────────────────
+
 function getPageAccess(page: SanityPage) {
   return {
-    isPublic: page.access === 'public' || page.access === undefined,
-    requireAuth: page.access === 'member' || page.access === 'admin',
+    requireAuth:  page.access === 'member' || page.access === 'admin',
     requireAdmin: page.access === 'admin',
-    showSidebar: page.layout === 'dashboard',
-    showNavbar: page.layout === 'public' || page.layout === undefined,
-    isAuth: page.layout === 'auth',
+    showSidebar:  page.layout === 'dashboard',
+    showNavbar:   page.layout === 'public' || !page.layout,
+    isAuth:       page.layout === 'auth',
   }
 }
 
-// ─── Static params ─────────────────────────────────────────────────────────────
+// ── Static params ─────────────────────────────────────────────────────────────
+// Pre-generate params for all known page slugs and lang codes.
+// This prevents 404 on first load of ISR pages.
 
 export async function generateStaticParams() {
   const [pageSlugs, postSlugs] = await Promise.all([
@@ -71,9 +88,12 @@ export async function generateStaticParams() {
   ])
 
   const seen = new Set<string>()
+
+  // Always include language codes (for /hi and /kn homepages)
   seen.add('hi')
   seen.add('kn')
 
+  // Include all English page slugs (handled as /[slug] at this route)
   for (const { slug, language } of [...pageSlugs, ...postSlugs]) {
     if (language === 'en' && slug !== 'home') seen.add(slug)
   }
@@ -81,14 +101,14 @@ export async function generateStaticParams() {
   return Array.from(seen).map((lang) => ({ lang }))
 }
 
-// ─── Metadata ─────────────────────────────────────────────────────────────────
+// ── Metadata ──────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params
 
   if (lang === 'en') return {}
 
-  // Language homepage (hi / kn)
+  // Language homepages (/hi, /kn)
   if (isSupportedLang(lang)) {
     const page = await sanityClient.fetch<SanityPage | null>(
       PAGE_BY_SLUG_AND_LANG_QUERY,
@@ -96,15 +116,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       { next: { revalidate: 60 } }
     )
     return buildMetadata({
-      slug: 'home',
-      lang,
+      slug: 'home', lang,
       title: page?.seoTitle ?? page?.title,
       description: page?.seoDescription,
       ogImage: (page?.ogImage as { url?: string } | undefined)?.url,
     })
   }
 
-  // English slug page — lang param IS the content slug
+  // English slug page — fetch whichever is found (page or post)
   const slug = lang
   const [page, post] = await Promise.all([
     sanityClient.fetch<SanityPage | null>(PAGE_BY_SLUG_AND_LANG_QUERY, { slug, lang: 'en' }, { next: { revalidate: 60 } }),
@@ -123,195 +142,200 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildMetadata({ slug, lang: 'en', title, description, ogImage })
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ── Main page ─────────────────────────────────────────────────────────────────
 
 export default async function LangOrSlugPage({ params }: Props) {
   const { lang } = await params
 
+  // /en/* → always redirect to canonical English URL (no prefix)
   if (lang === 'en') redirect('/')
 
+  // /hi or /kn → language homepage
   if (isSupportedLang(lang)) {
     return <LanguageHomePage lang={lang as SupportedLang} />
   }
 
-  return <EnglishContentPage slug={lang} />
+  // /login, /signup, /posts, /settings, /billing, /admin, /analytics, /[post-slug]
+  // lang param IS the slug here (English routes don't have a lang prefix)
+  return <EnglishSlugPage slug={lang} />
 }
 
-// ─── Language homepage ─────────────────────────────────────────────────────────
+// ── Language homepage (/hi or /kn) ────────────────────────────────────────────
 
 async function LanguageHomePage({ lang }: { lang: SupportedLang }) {
-  const resolution = await resolveContent('home', lang)
+  const client = await getSanityClient()
+  const page = await client.fetch<SanityPage | null>(
+    PAGE_BY_SLUG_AND_LANG_QUERY,
+    { slug: 'home', lang }
+  )
 
-  if (resolution.kind === 'page') {
-    const { page } = resolution
-    const access = getPageAccess(page)
+  if (!page) notFound()
 
-    // Access control checks
-    if (access.requireAuth) {
-      const supabase = await createSupabaseServer()
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) redirect(`/login?redirectTo=/${lang}`)
-
-      if (access.requireAdmin) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-        if (profile?.role !== 'admin') redirect('/')
-      }
-    }
-
-    // Dashboard layout
-    if (access.showSidebar) {
-      return (
-        <DashboardLayout lang={lang}>
-          {page.sections && page.sections.length > 0 ? (
-            <SectionRenderer sections={page.sections} lang={lang} />
-          ) : (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-white/30 text-sm">This page has no sections yet.</p>
-            </div>
-          )}
-        </DashboardLayout>
-      )
-    }
-
-    // Public layout
-    if (access.showNavbar) {
-      const siteConfig = await sanityClient.fetch<SanitySiteConfig | null>(SITE_CONFIG_QUERY)
-      return (
-        <div className="min-h-screen bg-[#0d0e14]">
-          <Navbar siteConfig={siteConfig} />
-          {page.sections && page.sections.length > 0 ? (
-            <SectionRenderer sections={page.sections} lang={lang} />
-          ) : (
-            <PostsListing lang={lang} />
-          )}
-          <Footer siteConfig={siteConfig} />
-        </div>
-      )
-    }
-
-    // Auth layout
-    return (
-      page.sections && page.sections.length > 0 ? (
-        <SectionRenderer sections={page.sections} lang={lang} />
-      ) : (
-        <PostsListing lang={lang} />
-      )
-    )
-  }
-
-  return <PostsListing lang={lang} />
+  return <RenderPage page={page} lang={lang} />
 }
 
-// ─── English content page / post ───────────────────────────────────────────────
+// ── English slug page (/login, /signup, /posts, etc.) ─────────────────────────
 
-async function EnglishContentPage({ slug }: { slug: string }) {
-  const resolution = await resolveContent(slug, 'en')
+async function EnglishSlugPage({ slug }: { slug: string }) {
+  const client = await getSanityClient()
 
-  if (resolution.kind === 'notFound') notFound()
+  // Try page first
+  const page = await client.fetch<SanityPage | null>(
+    PAGE_BY_SLUG_AND_LANG_QUERY,
+    { slug, lang: 'en' }
+  )
 
-  if (resolution.kind === 'page') {
-    const { page } = resolution
-    const access = getPageAccess(page)
+  if (page) {
+    return <RenderPage page={page} lang="en" />
+  }
 
-    // Access control checks
-    if (access.requireAuth) {
-      const supabase = await createSupabaseServer()
-      const { data: { user } } = await supabase.auth.getUser()
+  // Try post
+  const post = await client.fetch<SanityPost | null>(
+    POST_BY_SLUG_AND_LANG_QUERY,
+    { slug, lang: 'en' }
+  )
 
-      if (!user) redirect(`/login?redirectTo=/${slug}`)
+  if (post) {
+    const variants = await sanityClient.fetch<SlugEntry[]>(
+      POST_LANG_VARIANTS_QUERY,
+      { slug },
+      { next: { revalidate: 60 } }
+    )
+    return <PostDetail post={post} lang="en" variants={variants} />
+  }
 
-      if (access.requireAdmin) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-        if (profile?.role !== 'admin') redirect('/')
-      }
+  notFound()
+}
+
+// ── Render page — shared by all page types ─────────────────────────────────────
+// Handles access control, picks layout (public/dashboard/auth), renders sections.
+
+async function RenderPage({
+  page,
+  lang,
+}: {
+  page: SanityPage
+  lang: string
+}) {
+  const access = getPageAccess(page)
+
+  // Auth check
+  if (access.requireAuth) {
+    const supabase = await createSupabaseServer()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) redirect(`/login?redirectTo=${lang === 'en' ? `/${page.slug?.current ?? ''}` : `/${lang}/${page.slug?.current ?? ''}`}`)
+
+    if (access.requireAdmin) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      if (profile?.role !== 'admin') redirect('/')
     }
+  }
 
-    // Dashboard layout
-    if (access.showSidebar) {
-      return (
-        <DashboardLayout lang="en">
-          {page.sections && page.sections.length > 0 ? (
-            <SectionRenderer sections={page.sections} lang="en" />
-          ) : (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-white/30 text-sm">This page has no sections yet.</p>
-            </div>
-          )}
-        </DashboardLayout>
-      )
-    }
+  const sections = page.sections ?? []
+  const typedLang = lang as SupportedLang
 
-    // Public layout
-    if (access.showNavbar) {
-      const siteConfig = await sanityClient.fetch<SanitySiteConfig | null>(SITE_CONFIG_QUERY)
-      return (
-        <div className="min-h-screen bg-[#0d0e14]">
-          <Navbar siteConfig={siteConfig} />
-          {page.sections && page.sections.length > 0 ? (
-            <SectionRenderer sections={page.sections} lang="en" />
-          ) : (
-            <div className="flex items-center justify-center min-h-screen">
-              <p className="text-white/30 text-sm">This page has no sections yet.</p>
-            </div>
-          )}
-          <Footer siteConfig={siteConfig} />
-        </div>
-      )
-    }
-
-    // Auth layout
+  // Dashboard layout
+  if (access.showSidebar) {
     return (
-      page.sections && page.sections.length > 0 ? (
-        <SectionRenderer sections={page.sections} lang="en" />
-      ) : (
-        <div className="flex items-center justify-center min-h-screen">
-          <p className="text-white/30 text-sm">This page has no sections yet.</p>
-        </div>
-      )
+      <DashboardLayout lang={typedLang}>
+        {sections.length > 0 ? (
+          <SectionRenderer sections={sections} lang={typedLang} />
+        ) : (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-white/30 text-sm">This page has no sections yet.</p>
+          </div>
+        )}
+      </DashboardLayout>
     )
   }
 
-  // Post
-  const { post, variants } = resolution
+  // Auth layout (no chrome — used for login/signup)
+  if (access.isAuth) {
+    return sections.length > 0 ? (
+      <SectionRenderer sections={sections} lang={typedLang} />
+    ) : (
+      <div className="min-h-screen bg-[#0d0e14]" />
+    )
+  }
+
+  // Public layout (Navbar + Footer)
+  const siteConfig = await sanityClient.fetch<SanitySiteConfig | null>(
+    SITE_CONFIG_QUERY,
+    {},
+    { next: { revalidate: 60 } }
+  )
+
+  return (
+    <div className="min-h-screen bg-[#0d0e14]">
+      <Navbar siteConfig={siteConfig} lang={typedLang} />
+      {sections.length > 0 ? (
+        <SectionRenderer sections={sections} lang={typedLang} />
+      ) : (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <p className="text-white/30 text-sm">No sections configured for this page.</p>
+        </div>
+      )}
+      <Footer siteConfig={siteConfig} lang={typedLang} />
+    </div>
+  )
+}
+
+// ── Post detail ───────────────────────────────────────────────────────────────
+
+async function PostDetail({
+  post,
+  lang,
+  variants,
+}: {
+  post: SanityPost
+  lang: string
+  variants: SlugEntry[]
+}) {
   const variantMap = Object.fromEntries(variants.map((v) => [v.language, v.slug]))
+
+  // Back label in the right language
+  const backLabel = lang === 'hi' ? '← वापस' : lang === 'kn' ? '← ಹಿಂದೆ' : '← Back'
 
   return (
     <main className="min-h-screen bg-[#0d0e14] text-white px-6 py-12 max-w-3xl mx-auto">
+      {/* Nav row */}
       <nav className="flex items-center justify-between mb-8 text-sm">
-        <Link href="/" className="text-white/30 hover:text-white/70 transition-colors">
-          ← Back
+        <Link
+          href={lang === 'en' ? '/' : `/${lang}`}
+          className="text-white/30 hover:text-white/70 transition-colors"
+        >
+          {backLabel}
         </Link>
+        {/* Language switcher — links to other language variants of this post */}
         <div className="flex items-center gap-2">
           {SUPPORTED_LANGUAGES.map((l) => {
             const targetSlug = variantMap[l]
             if (!targetSlug) return null
             const url = l === 'en' ? `/${targetSlug}` : `/${l}/${targetSlug}`
+            const isActive = l === lang
             return (
               <Link
                 key={l}
                 href={url}
                 className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${
-                  l === 'en'
+                  isActive
                     ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
                     : 'text-white/30 hover:text-white/60'
                 }`}
               >
-                {LANG_LABELS[l as SupportedLang] ? l.toUpperCase() : l.toUpperCase()}
+                {LANG_LABELS[l as SupportedLang]?.toUpperCase() ?? l.toUpperCase()}
               </Link>
             )
           })}
         </div>
       </nav>
 
+      {/* Cover image */}
       {post.coverImage && (post.coverImage as { url?: string }).url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -323,18 +347,24 @@ async function EnglishContentPage({ slug }: { slug: string }) {
         />
       )}
 
+      {/* Tags */}
       {post.tags && post.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {post.tags.map((tag) => (
-            <span key={tag} className="px-2 py-0.5 text-[10px] font-medium text-white/40 bg-white/5 rounded-full">
+            <span
+              key={tag}
+              className="px-2 py-0.5 text-[10px] font-medium text-white/40 bg-white/5 rounded-full"
+            >
               {tag}
             </span>
           ))}
         </div>
       )}
 
+      {/* Heading */}
       <h1 className="text-3xl font-bold tracking-tight mb-3">{post.title}</h1>
 
+      {/* Meta */}
       <div className="flex items-center gap-3 mb-8 text-white/30 text-sm">
         {post.authorName && <span>{post.authorName}</span>}
         {post.authorName && post.publishedAt && <span>·</span>}
@@ -345,12 +375,14 @@ async function EnglishContentPage({ slug }: { slug: string }) {
         )}
       </div>
 
+      {/* Excerpt */}
       {post.excerpt && (
         <p className="text-white/50 text-lg leading-relaxed mb-8 border-l-2 border-indigo-500/40 pl-4 italic">
           {post.excerpt}
         </p>
       )}
 
+      {/* Body */}
       {post.body && (
         <article className="prose prose-invert prose-indigo max-w-none">
           <PortableText value={post.body as Parameters<typeof PortableText>[0]['value']} />

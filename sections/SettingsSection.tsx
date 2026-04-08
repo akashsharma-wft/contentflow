@@ -1,4 +1,7 @@
 // sections/SettingsSection.tsx
+//
+// FIX: SectionRenderer calls <SettingsSection lang={lang} /> but the component
+// accepted no arguments. Added lang prop to the signature.
 import { sanityClient } from '@/lib/sanity/client'
 import { SETTINGS_PAGE_CONFIG_QUERY } from '@/lib/sanity/queries'
 import { ProfileForm } from '@/features/settings/components/ProfileForm'
@@ -22,7 +25,11 @@ export type SettingsConfig = {
   deleteAccountLabel?: string
 }
 
-export async function SettingsSection() {
+interface Props {
+  lang?: string
+}
+
+export async function SettingsSection({ lang: _lang = 'en' }: Props) {
   const config = await sanityClient.fetch<SettingsConfig | null>(SETTINGS_PAGE_CONFIG_QUERY)
 
   return (

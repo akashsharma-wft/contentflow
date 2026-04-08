@@ -1,7 +1,8 @@
 // sections/AdminSection.tsx
-// Server component — fetches adminPageConfig from Sanity AND all users
-// from Supabase using the service role key. Both happen server-side only.
-// The service role key NEVER touches the client.
+//
+// FIX: SectionRenderer calls <AdminSection lang={lang} /> but the component
+// accepted no arguments. Added lang prop to the signature.
+// Service role key stays server-side only.
 import 'server-only'
 import { sanityClient } from '@/lib/sanity/client'
 import { ADMIN_PAGE_CONFIG_QUERY } from '@/lib/sanity/queries'
@@ -21,8 +22,11 @@ export type AdminConfig = {
   emptyLabel?: string
 }
 
-export async function AdminSection() {
-  // Fetch config and users in parallel
+interface Props {
+  lang?: string
+}
+
+export async function AdminSection({ lang: _lang = 'en' }: Props) {
   const [config, users] = await Promise.all([
     sanityClient.fetch<AdminConfig | null>(ADMIN_PAGE_CONFIG_QUERY),
     getAllUsers(),

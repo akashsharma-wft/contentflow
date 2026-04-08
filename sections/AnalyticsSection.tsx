@@ -1,6 +1,7 @@
 // sections/AnalyticsSection.tsx
-// Server component — fetches analyticsConfig from Sanity and passes labels
-// to the client component. PostHog keys stay in env vars, never exposed to client.
+//
+// FIX: SectionRenderer calls <AnalyticsSection lang={lang} /> but the component
+// accepted no arguments. Added lang prop to the signature.
 import { sanityClient } from '@/lib/sanity/client'
 import { ANALYTICS_CONFIG_QUERY } from '@/lib/sanity/queries'
 import { PostHogEventsClient } from '@/features/analytics/components/PostHogEventsClient'
@@ -18,11 +19,13 @@ export type AnalyticsConfig = {
   featureFlagLabel?: string
 }
 
-export async function AnalyticsSection() {
+interface Props {
+  lang?: string
+}
+
+export async function AnalyticsSection({ lang: _lang = 'en' }: Props) {
   const config = await sanityClient.fetch<AnalyticsConfig | null>(ANALYTICS_CONFIG_QUERY)
 
-  // Feature flag evaluated server-side
-  // (PostHog Node SDK would go here — currently using client-side check)
   const serverFlags = { showFeaturedBanner: false }
 
   return <PostHogEventsClient config={config ?? {}} serverFlags={serverFlags} />
