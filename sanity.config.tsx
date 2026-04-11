@@ -6,6 +6,7 @@ import { presentationTool } from 'sanity/presentation'
 import { documentInternationalization } from '@sanity/document-internationalization'
 import { schemaTypes }                   from '@/sanity/schemaTypes'
 import { StudioNavbar }                  from '@/sanity/components/StudioNavbar'
+import { StudioToolMenu }               from '@/sanity/components/StudioToolMenu'
 import { structure, defaultDocumentNode } from '@/sanity/structure'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -34,8 +35,9 @@ export default defineConfig({
 
   studio: {
     components: {
-      // Language switcher in the top-right of the Studio navbar
-      navbar: StudioNavbar,
+      navbar:   StudioNavbar,
+      // Language switcher injected inline next to Structure/Vision/Presentation tabs
+      toolMenu: StudioToolMenu,
     },
   },
 

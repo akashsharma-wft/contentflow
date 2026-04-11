@@ -36,13 +36,15 @@ export async function getSanityClient() {
     token: isEnabled ? process.env.SANITY_API_READ_TOKEN : undefined,
     // perspective: 'previewDrafts' makes GROQ return draft documents when they exist
     perspective: isEnabled ? 'previewDrafts' : 'published',
-    // stega encoding embeds edit coordinates in text strings.
-    // The VisualEditing component in layout.tsx reads these to show blue click-to-edit borders.
+    // Stega encoding: enabled only when draft mode is on.
+    // Stega embeds hidden Unicode in text strings so the VisualEditing overlay can
+    // map rendered content back to Sanity fields (click-to-edit, "Documents on page").
+    // NOTE: stega alone does not cause blue overlays — the VisualEditing client
+    // component is what scans the DOM and draws them. We gate that component to only
+    // mount when inside the Presentation Tool iframe (window.self !== window.top),
+    // so stale draft-mode cookies no longer cause overlays on normal browsing.
     stega: isEnabled
-      ? {
-          enabled: true,
-          studioUrl: '/studio',
-        }
+      ? { enabled: true, studioUrl: '/studio' }
       : { enabled: false },
   })
 }

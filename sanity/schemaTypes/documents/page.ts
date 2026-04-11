@@ -26,8 +26,24 @@ export const pageType = defineType({
       title: 'Slug',
       type: 'slug',
       group: 'settings',
-      description: '"home" → /   |   "about" → /about',
-      options: { source: 'title', maxLength: 96 },
+      description: '"home" → /   |   "about" → /about   (must be unique per language)',
+      options: {
+        source: 'title',
+        maxLength: 96,
+        isUnique: async (slug, context) => {
+          // Allow the same slug in different languages — uniqueness is (slug, language) pair
+          const { document, getClient } = context
+          if (!document) return true
+          const client = getClient({ apiVersion: '2024-01-01' })
+          const id  = document._id.replace(/^drafts\./, '')
+          const lang = (document as { language?: string }).language ?? 'en'
+          const count = await client.fetch<number>(
+            `count(*[_type == "page" && slug.current == $slug && language == $lang && !(_id in [$id, "drafts." + $id])])`,
+            { slug, lang, id }
+          )
+          return count === 0
+        },
+      },
       validation: R => R.required(),
     }),
     defineField({
@@ -75,28 +91,15 @@ export const pageType = defineType({
     }),
 
     // ── Sections ─────────────────────────────────────────────────────────
+    // Each entry is a reference to a `section` document.
+    // Use the Studio sidebar to create/manage sections grouped by page.
     defineField({
       name: 'sections',
       title: 'Sections',
+      description: 'Add section documents here (create them first via the Sections menu).',
       type: 'array',
       group: 'content',
-      of: [
-        // System sections (predefined inline objects)
-        { type: 'heroSection'           },
-        { type: 'featuresSection'       },
-        { type: 'featuredPostsSection'  },
-        { type: 'recentPostsSection'    },
-        { type: 'ctaSection'            },
-        { type: 'postsSection'          },
-        { type: 'authHeroSection'       },
-        { type: 'authSection'           },
-        { type: 'authLegalSection'      },
-        { type: 'analyticsSection'      },
-        { type: 'navbarSection'         },
-        { type: 'footerSection'         },
-        // Custom sections (reference to section document)
-        { type: 'reference', title: 'Custom Section', to: [{ type: 'section' }] },
-      ],
+      of: [{ type: 'reference', to: [{ type: 'section' }] }],
     }),
 
     // ── SEO ──────────────────────────────────────────────────────────────
@@ -124,12 +127,21 @@ export const pageType = defineType({
       access:   'access',
       layout:   'layout',
     },
-    prepare({ title, slug, language, access, layout }) {
-      const a = access  === 'guest' ? '🌐' : access  === 'user' ? '🔒' : '🛡️'
-      const l = layout  === 'dashboard' ? '🖥' : layout === 'auth' ? '🔑' : '🏠'
+    prepare({ title, slug, language, access, layout }: {
+      title?: string; slug?: string; language?: string; access?: string; layout?: string
+    }) {
+      const langTag  = language?.toUpperCase() ?? '?'
+      const route    = slug ? (slug === 'home' ? '/' : `/${slug}`) : '…'
+
+      const accessIcon = access === 'admin' ? '🛡️' : access === 'user' ? '🔒' : '🌐'
+      const accessLabel = access === 'admin' ? 'Admin' : access === 'user' ? 'User' : 'Guest'
+
+      const layoutIcon  = layout === 'dashboard' ? '🖥' : layout === 'auth' ? '🔑' : '🏠'
+      const layoutLabel = layout === 'dashboard' ? 'Dashboard' : layout === 'auth' ? 'Auth' : 'Home'
+
       return {
-        title:    title ?? 'Untitled',
-        subtitle: `${language?.toUpperCase() ?? '—'} · /${slug ?? '…'} · ${a} ${access} · ${l} ${layout}`,
+        title:    `${title ?? 'Untitled'}  ·  ${langTag}`,
+        subtitle: `${route}  ·  ${accessIcon} ${accessLabel}  ·  ${layoutIcon} ${layoutLabel}`,
       }
     },
   },

@@ -2,35 +2,41 @@
 // ContentFlow Studio sidebar structure.
 //
 // Language awareness:
-//   - All document lists filter by getStudioLanguage() so editors only see
-//     documents in their currently selected language.
-//   - When a new document is created, the language field initialValue function
-//     (defined in each schema) auto-sets the language to the current value.
-//   - Language switching reloads the Studio (see StudioNavbar.tsx), which
-//     re-evaluates this function with the updated language from localStorage.
+//   All document lists filter by getStudioLanguage() so editors see only
+//   documents in the currently selected language. Switching language via
+//   StudioNavbar dropdown reloads the Studio so this re-evaluates.
 //
-// Sections structure:
-//   Sections are now grouped by page (Home, Login, Sign Up, Posts, Settings, Admin)
-//   rather than by section type. Each group filters `section` documents where
-//   page == <slug> AND language == <currentLang>.
+// Architecture:
+//   Sections are standalone documents (type: 'section') grouped by page.
+//   Pages store references to section documents.
+//
+// Site Config:
+//   Single siteConfig document (stable ID: 'site-config').
+//   No per-language duplication.
+//
+// Preview:
+//   Page documents get an Editor | Preview tab pair.
+//   PreviewIframe derives the URL from slug + language using DocumentViewProps.
 
 import type { StructureBuilder, DefaultDocumentNodeContext } from 'sanity/structure'
 import {
   DocumentIcon,
   ComposeIcon,
   StackCompactIcon,
-  CodeIcon,
   CogIcon,
   ImageIcon,
   DocumentTextIcon,
   LockIcon,
   ActivityIcon,
+  ControlsIcon,
+  CreditCardIcon,
+  UsersIcon,
 } from '@sanity/icons'
 import { getStudioLanguage } from './lib/languageStore'
-import { t }                 from './lib/translations'
+import { t }                  from './lib/translations'
+import { PreviewIframe }      from './components/PreviewIframe'
 
 // ── defaultDocumentNode ───────────────────────────────────────────────────────
-// Adds Editor | Preview tabs for page and post documents.
 
 export function defaultDocumentNode(
   S: StructureBuilder,
@@ -40,7 +46,7 @@ export function defaultDocumentNode(
     return S.document().views([
       S.view.form().title('Editor'),
       S.view
-        .component(() => null)
+        .component(PreviewIframe)
         .title('Preview')
         .id('preview'),
     ])
@@ -48,9 +54,20 @@ export function defaultDocumentNode(
   return S.document().views([S.view.form()])
 }
 
+// ── Language label map ────────────────────────────────────────────────────────
+
+const LANG_LABELS: Record<string, string> = {
+  en: 'English',
+  hi: 'Hindi — हिंदी',
+  kn: 'Kannada — ಕನ್ನಡ',
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** One list-item in the Sections tree that shows `section` docs for a given page + lang. */
+/**
+ * Section group: one list item per page that shows section docs
+ * for the active language. Label includes the language tag.
+ */
 function pageSectionItem(
   S: StructureBuilder,
   lang: string,
@@ -59,13 +76,15 @@ function pageSectionItem(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any,
 ) {
+  const langTag   = lang.toUpperCase()
+  const fullLabel = `${label}  ·  ${langTag}`
   return S.listItem()
-    .title(label)
-    .id(`page-${page}`)
+    .title(fullLabel)
+    .id(`page-sections-${page}-${lang}`)
     .icon(icon)
     .child(
       S.documentList()
-        .title(label)
+        .title(fullLabel)
         .filter(`_type == "section" && page == "${page}" && language == "${lang}"`)
         .defaultOrdering([{ field: 'title', direction: 'asc' }]),
     )
@@ -81,90 +100,64 @@ export function structure(S: StructureBuilder) {
     .title('ContentFlow')
     .items([
 
-      // ── Pages ─────────────────────────────────────────────────────────
+      // ── Pages ─────────────────────────────────────────────────────────────
       S.listItem()
         .title(t('pages', lang))
+        .id(`pages-${lang}`)
         .icon(DocumentIcon)
         .child(
           S.documentList()
-            .title(t('pages', lang))
+            .title(`${t('pages', lang)}  ·  ${lang.toUpperCase()}`)
             .filter(filter('page'))
             .defaultOrdering([{ field: 'title', direction: 'asc' }]),
         ),
 
-      // ── Posts ─────────────────────────────────────────────────────────
+      // ── Posts ─────────────────────────────────────────────────────────────
       S.listItem()
         .title(t('posts', lang))
+        .id(`posts-${lang}`)
         .icon(ComposeIcon)
         .child(
           S.documentList()
-            .title(t('posts', lang))
+            .title(`${t('posts', lang)}  ·  ${lang.toUpperCase()}`)
             .filter(filter('post'))
             .defaultOrdering([{ field: 'publishedAt', direction: 'desc' }]),
         ),
 
       S.divider(),
 
-      // ── Sections — grouped by page ─────────────────────────────────────
+      // ── Sections — grouped by page, labeled with language tag ─────────────
       S.listItem()
         .title(t('sections', lang))
+        .id(`sections-${lang}`)
         .icon(StackCompactIcon)
         .child(
           S.list()
-            .title(t('pageSections', lang))
+            .title(`${t('pageSections', lang)}  ·  ${lang.toUpperCase()}`)
             .items([
-              pageSectionItem(S, lang, 'home',     'Home Page Sections',     ImageIcon),
-              pageSectionItem(S, lang, 'login',    'Login Page Sections',    LockIcon),
-              pageSectionItem(S, lang, 'signup',   'Sign Up Page Sections',  LockIcon),
-              pageSectionItem(S, lang, 'posts',    'Posts Page Sections',    DocumentTextIcon),
-              pageSectionItem(S, lang, 'settings', 'Settings Page Sections', CogIcon),
-              pageSectionItem(S, lang, 'billing',  'Billing Page Sections',  DocumentTextIcon),
-              pageSectionItem(S, lang, 'admin',    'Admin Page Sections',    ActivityIcon),
-            ]),
-        ),
-
-      // ── Components ────────────────────────────────────────────────────
-      S.listItem()
-        .title(t('components', lang))
-        .icon(CodeIcon)
-        .child(
-          S.list()
-            .title(t('components', lang))
-            .items([
-              S.listItem()
-                .title(t('basic', lang))
-                .id('components-basic')
-                .icon(CodeIcon)
-                .child(
-                  S.documentList()
-                    .title(t('basic', lang))
-                    .filter(`_type == "component" && language == "${lang}" && type in ["button", "input", "select"]`)
-                    .defaultOrdering([{ field: 'name', direction: 'asc' }]),
-                ),
-              S.listItem()
-                .title(t('advanced', lang))
-                .id('components-advanced')
-                .icon(CodeIcon)
-                .child(
-                  S.documentList()
-                    .title(t('advanced', lang))
-                    .filter(`_type == "component" && language == "${lang}" && type in ["container", "form", "grid"]`)
-                    .defaultOrdering([{ field: 'name', direction: 'asc' }]),
-                ),
+              pageSectionItem(S, lang, 'home',     'Home',     ImageIcon),
+              pageSectionItem(S, lang, 'login',    'Login',    LockIcon),
+              pageSectionItem(S, lang, 'signup',   'Sign Up',  LockIcon),
+              pageSectionItem(S, lang, 'posts',    'Posts',    DocumentTextIcon),
+              pageSectionItem(S, lang, 'settings', 'Settings', ControlsIcon),
+              pageSectionItem(S, lang, 'billing',  'Billing',  CreditCardIcon),
+              pageSectionItem(S, lang, 'admin',    'Admin',    UsersIcon),
             ]),
         ),
 
       S.divider(),
 
-      // ── Site Config ───────────────────────────────────────────────────
+      // ── Site Config — single document ─────────────────────────────────────
       S.listItem()
         .title(t('siteConfig', lang))
+        .id('site-config')
         .icon(CogIcon)
         .child(
-          S.documentList()
-            .title(t('siteConfig', lang))
-            .filter(filter('siteConfig'))
-            .defaultOrdering([{ field: 'title', direction: 'asc' }]),
+          S.document()
+            .documentId('site-config')
+            .schemaType('siteConfig')
+            .title('Site Config'),
         ),
+
     ])
 }

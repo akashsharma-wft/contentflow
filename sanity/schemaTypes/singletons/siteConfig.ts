@@ -1,15 +1,9 @@
 // sanity/schemaTypes/singletons/siteConfig.ts
-// Per-language site configuration. Create one document per language (en / hi / kn).
+// Single site configuration document — one document for the whole site.
+// Stable ID: 'site-config'
 
 import { defineField, defineType } from 'sanity'
 import { CogIcon } from '@sanity/icons'
-import { getStudioLanguage } from '../../lib/languageStore'
-
-const LANGUAGE_OPTIONS = [
-  { title: 'English',          value: 'en' },
-  { title: 'Hindi — हिंदी',    value: 'hi' },
-  { title: 'Kannada — ಕನ್ನಡ', value: 'kn' },
-]
 
 export const siteConfig = defineType({
   name: 'siteConfig',
@@ -19,18 +13,10 @@ export const siteConfig = defineType({
   fields: [
     defineField({
       name: 'title',
-      title: 'Title',
+      title: 'Browser Tab Title',
       type: 'string',
       description: 'Displayed in the browser tab.',
       initialValue: 'ContentFlow',
-      validation: R => R.required(),
-    }),
-    defineField({
-      name: 'language',
-      title: 'Language',
-      type: 'string',
-      initialValue: () => getStudioLanguage(),
-      options: { list: LANGUAGE_OPTIONS, layout: 'radio' },
       validation: R => R.required(),
     }),
     defineField({
@@ -43,10 +29,10 @@ export const siteConfig = defineType({
     }),
   ],
   preview: {
-    select: { title: 'title', language: 'language' },
-    prepare: ({ title, language }) => ({
+    select: { title: 'title', siteName: 'siteName' },
+    prepare: ({ title, siteName }) => ({
       title:    title ?? 'Site Config',
-      subtitle: language?.toUpperCase() ?? '—',
+      subtitle: siteName ?? '—',
       media:    CogIcon,
     }),
   },

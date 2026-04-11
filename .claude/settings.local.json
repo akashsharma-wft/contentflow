@@ -8,7 +8,19 @@
       "Bash(xargs grep:*)",
       "Bash(node -e \"const {useRouterState} = require\\('sanity/router'\\); console.log\\(typeof useRouterState\\)\")",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(echo \"tsc done, exit: $?\")"
+      "Bash(echo \"tsc done, exit: $?\")",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(node_modules/.bin/tsc --version)",
+      "Bash(echo \"exit: $?\")",
+      "Read(//tmp/**)",
+      "Bash(npx dotenv:*)",
+      "Bash(node -e \"const s = require\\('sanity'\\); console.log\\(Object.keys\\(s\\).filter\\(k => k.toLowerCase\\(\\).includes\\('view'\\) || k.toLowerCase\\(\\).includes\\('document'\\)\\)\\)\")",
+      "Bash(node -e \"const {createClient} = require\\('next-sanity'\\); const c = createClient\\({projectId:'test',dataset:'prod',apiVersion:'2024-01-01'}\\); console.log\\('stega config:', JSON.stringify\\(c.config\\(\\).stega ?? 'not in config'\\)\\)\")",
+      "Bash(node -e \"const {createClient} = require\\('next-sanity'\\); const c = createClient\\({projectId:'test',dataset:'prod',apiVersion:'2024-01-01'}\\); console.log\\('stega:', JSON.stringify\\(c.config\\(\\).stega\\)\\)\")",
+      "Bash(node -e \"const pkg = require\\('./node_modules/next-sanity/package.json'\\); console.log\\('next-sanity:', pkg.version\\)\")",
+      "Bash(node -e \"try{const p=require\\('./node_modules/@sanity/visual-editing/package.json'\\);console.log\\('@sanity/visual-editing:',p.version\\)}catch\\(e\\){console.log\\('not installed directly'\\)}\")",
+      "Bash(node -e \"const p = require\\('@sanity/presentation-comlink'\\); console.log\\(Object.keys\\(p\\).filter\\(k => k.toLowerCase\\(\\).includes\\('frame'\\) || k.toLowerCase\\(\\).includes\\('preview'\\) || k.toLowerCase\\(\\).includes\\('maybe'\\)\\)\\)\")",
+      "Bash(node -e \"const {isMaybePreviewIframe} = require\\('@sanity/presentation-comlink'\\); console.log\\(isMaybePreviewIframe.toString\\(\\)\\)\")"
     ]
   }
 }

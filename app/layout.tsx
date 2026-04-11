@@ -9,10 +9,10 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { draftMode } from 'next/headers'
-import { VisualEditing } from 'next-sanity/visual-editing'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { Toaster } from '@/components/ui/sonner'
+import { DraftModeVisualEditing } from '@/components/DraftModeVisualEditing'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -51,10 +51,12 @@ export default async function RootLayout({
 
         <Toaster richColors position="top-right" />
 
-        {/* Visual editing overlays — only rendered when Draft Mode is active.
-            Reads stega-encoded field coordinates from rendered text and draws
-            blue borders + edit buttons that open the Studio field directly. */}
-        {isDraftMode && <VisualEditing />}
+        {/* Visual editing overlays — only when draft mode is ON *and* the page
+            is loaded inside the Sanity Presentation Tool iframe.
+            DraftModeVisualEditing checks window.self !== window.top client-side,
+            so a stale draft-mode cookie on normal browsing never mounts the
+            overlay engine and never draws blue edit boundaries. */}
+        {isDraftMode && <DraftModeVisualEditing />}
       </body>
     </html>
   )

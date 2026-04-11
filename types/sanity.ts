@@ -607,9 +607,65 @@ export type LoginPageSection    = { _type: 'loginPageSection';    _key: string; 
 export type SignupPageSection   = { _type: 'signupPageSection';   _key: string; heading?: string; description?: string }
 export type PostDetailPageSection = { _type: 'postDetailPageSection'; _key: string; heading?: string; description?: string }
 
+// ─── Section document content sub-objects (new architecture) ─────────────────
+// These mirror the named sub-object fields in the `section` document schema.
+// They are passed to components by SectionRenderer after reading `sectionType`.
+
+export type SectionHeroContent = Omit<HeroSection, '_type' | '_key'>
+export type SectionFeaturedPostsContent = Omit<FeaturedPostsSection, '_type' | '_key'>
+export type SectionRecentPostsContent = Omit<RecentPostsSection, '_type' | '_key'>
+export type SectionCtaContent = Omit<CtaSection, '_type' | '_key'>
+
+export type SectionAuthHeroContent = {
+  mode?: 'login' | 'signup' | 'both'
+  badge?: string
+  headline?: string
+  features?: AuthHeroFeature[]
+  footerNote?: string
+}
+
+export type SectionAuthFormContent = Omit<AuthSection, '_type' | '_key'>
+
+export type SectionAuthLegalContent = {
+  links?: AuthLegalLink[]
+}
+
+export type SectionFeaturesContent = Omit<FeaturesSection, '_type' | '_key'>
+
+export type SectionMarker = { heading?: string }
+
+/**
+ * A dereferenced `section` document returned by `sections[]->` in GROQ.
+ * The `sectionType` field is the discriminator; one of the named content
+ * sub-objects will be populated depending on which type was selected.
+ */
+export type SanityPageSection = {
+  _type:       'section'
+  _id:         string
+  sectionType: string
+  title?:      string
+  language?:   string
+  // Content sub-objects — only the matching one will be non-null
+  hero?:            SectionHeroContent | null
+  featuredPosts?:   SectionFeaturedPostsContent | null
+  recentPosts?:     SectionRecentPostsContent | null
+  cta?:             SectionCtaContent | null
+  authHero?:        SectionAuthHeroContent | null
+  authForm?:        SectionAuthFormContent | null
+  authLegal?:       SectionAuthLegalContent | null
+  features?:        SectionFeaturesContent | null
+  postsList?:       SectionMarker | null
+  analyticsMarker?: SectionMarker | null
+  settingsMarker?:  SectionMarker | null
+  billingMarker?:   SectionMarker | null
+  adminMarker?:     SectionMarker | null
+}
+
 // ─── SanitySection union ──────────────────────────────────────────────────────
 
 export type SanitySection =
+  // New section document type (sections[]-> dereferenced)
+  | SanityPageSection
   // New system sections
   | HeroSection
   | FeaturesSection

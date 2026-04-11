@@ -29,30 +29,45 @@ const POST_FULL_FIELDS = groq`
 /**
  * Sections projection.
  *
- * Handles two cases that live in the same array:
- *   a) Inline system section objects (heroSection, featuresSection, …)
- *      → spread all fields with `...`
- *   b) References to custom section documents
- *      → dereference with @-> and project section + its component refs
+ * All entries in page.sections[] are references to `section` documents.
+ * Dereference with []-> to get the full section doc including all content
+ * sub-objects (hero, featuredPosts, recentPosts, cta, authHero, authForm,
+ * authLegal, features, postsList, analyticsMarker, settingsMarker,
+ * billingMarker, adminMarker).
  *
- * Image fields (e.g. backgroundImage) are returned as full Sanity image
- * objects so that @sanity/image-url can resolve them client-side.
+ * backgroundImage inside hero is expanded so @sanity/image-url can resolve it.
  */
 const SECTIONS_PROJECTION = groq`
-  sections[] {
-    ...,
-    _type == "reference" => @-> {
-      _id,
-      _type,
-      title,
-      language,
-      "components": components[]-> {
-        _id,
-        name,
-        type,
-        config
-      }
-    }
+  "sections": sections[]-> {
+    _id,
+    _type,
+    sectionType,
+    title,
+    language,
+    hero {
+      ...,
+      backgroundImage { ..., asset-> }
+    },
+    featuredPosts,
+    recentPosts,
+    cta,
+    authHero {
+      ...,
+      features[] { _key, icon, text }
+    },
+    authForm,
+    authLegal {
+      links[] { _key, label, href }
+    },
+    features {
+      ...,
+      features[] { _key, title, description, icon }
+    },
+    postsList,
+    analyticsMarker,
+    settingsMarker,
+    billingMarker,
+    adminMarker
   }
 `
 
@@ -327,15 +342,14 @@ export const ALL_POST_SLUGS_QUERY = groq`
 // ─── Site config ───────────────────────────────────────────────────────────────
 
 /**
- * Site configuration for a given language.
- * New schema: one document per language with title, language, siteName.
- * Params: { lang: string }
+ * Single site configuration document.
+ * Stable ID: 'site-config' — no per-language duplication.
+ * No params required.
  */
 export const SITE_CONFIG_QUERY = groq`
-  *[_type == "siteConfig" && language == $lang][0] {
+  *[_type == "siteConfig" && _id == "site-config"][0] {
     _id,
     title,
-    language,
     siteName
   }
 `
