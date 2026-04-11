@@ -18,6 +18,20 @@ export const APP_NAV_ITEMS: SidebarNavLink[] = [
   { label: 'Admin', href: '/admin', icon: 'Shield', adminOnly: true },
 ]
 
+/** Translations for nav item labels keyed by label → language → translated string */
+const NAV_TRANSLATIONS: Record<string, Record<string, string>> = {
+  Posts:     { en: 'Posts',      hi: 'पोस्ट',          kn: 'ಪೋಸ್ಟ್‌ಗಳು'     },
+  Settings:  { en: 'Settings',   hi: 'सेटिंग्स',        kn: 'ಸೆಟ್ಟಿಂಗ್‌ಗಳು'   },
+  Billing:   { en: 'Billing',    hi: 'बिलिंग',           kn: 'ಬಿಲ್ಲಿಂಗ್'       },
+  Analytics: { en: 'Analytics',  hi: 'विश्लेषण',         kn: 'ವಿಶ್ಲೇಷಣೆ'       },
+  Admin:     { en: 'Admin',      hi: 'एडमिन',            kn: 'ಅಡ್ಮಿನ್'          },
+}
+
+/** Returns the translated nav label for the given language, falls back to the English label. */
+export function getLocalizedLabel(label: string, lang: string): string {
+  return NAV_TRANSLATIONS[label]?.[lang] ?? label
+}
+
 /**
  * Filter nav items based on user role.
  * Returns all non-admin items + admin items if user is admin.

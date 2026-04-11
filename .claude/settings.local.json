@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(node -e \"const s = require\\('sanity'\\); console.log\\(Object.keys\\(s\\).filter\\(k => k.toLowerCase\\(\\).includes\\('navbar'\\) || k.toLowerCase\\(\\).includes\\('toolbar'\\)\\)\\)\")",
+      "Bash(node -e \"const r = require\\('sanity/router'\\); console.log\\(Object.keys\\(r\\).filter\\(k => k.toLowerCase\\(\\).includes\\('route'\\) || k.toLowerCase\\(\\).includes\\('nav'\\)\\)\\)\")",
+      "Bash(node -e ':*)",
+      "Bash(xargs grep:*)",
+      "Bash(node -e \"const {useRouterState} = require\\('sanity/router'\\); console.log\\(typeof useRouterState\\)\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(echo \"tsc done, exit: $?\")"
+    ]
+  }
+}

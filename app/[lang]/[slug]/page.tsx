@@ -23,6 +23,7 @@ import {
   ALL_POST_SLUGS_QUERY,
   POST_LANG_VARIANTS_QUERY,
   SITE_CONFIG_QUERY,
+  NAV_PAGES_QUERY,
 } from '@/lib/sanity/queries'
 import {
   SUPPORTED_LANGUAGES,
@@ -35,7 +36,7 @@ import { SectionRenderer } from '@/sections/SectionRenderer'
 import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
-import type { SanityPage, SanityPost, SanitySiteConfig } from '@/types/sanity'
+import type { SanityPage, SanityPost, SanitySiteConfig, NavPage } from '@/types/sanity'
 
 export const revalidate = 60
 
@@ -46,10 +47,10 @@ interface Props {
 // ── Access control helper (same as app/[lang]/page.tsx) ────────────────────────
 function getPageAccess(page: SanityPage) {
   return {
-    requireAuth:  page.access === 'member' || page.access === 'admin',
+    requireAuth:  page.access === 'user' || page.access === 'admin',
     requireAdmin: page.access === 'admin',
     showSidebar:  page.layout === 'dashboard',
-    showNavbar:   page.layout === 'public' || !page.layout,
+    showNavbar:   page.layout === 'home' || !page.layout,
     isAuth:       page.layout === 'auth',
   }
 }
@@ -140,22 +141,29 @@ export default async function LocalizedPage({ params }: Props) {
       )
     }
 
-    // Auth layout (no chrome — login/signup)
+    // Auth layout (no chrome) — flex-wrap assembles 3-section auth layout
     if (access.isAuth) {
       return sections.length > 0 ? (
-        <SectionRenderer sections={sections} lang={lang} />
+        <div className="min-h-screen bg-[#0d0e14] lg:flex lg:flex-wrap">
+          <SectionRenderer sections={sections} lang={lang} />
+        </div>
       ) : (
         <div className="min-h-screen bg-[#0d0e14]" />
       )
     }
 
     // Public layout (Navbar + Footer)
-    const siteConfig = await sanityClient.fetch<SanitySiteConfig | null>(
-      SITE_CONFIG_QUERY, {}, { next: { revalidate: 60 } }
-    )
+    const [siteConfig, navPages] = await Promise.all([
+      sanityClient.fetch<SanitySiteConfig | null>(
+        SITE_CONFIG_QUERY, { lang }, { next: { revalidate: 60 } }
+      ),
+      sanityClient.fetch<NavPage[]>(
+        NAV_PAGES_QUERY, { lang }, { next: { revalidate: 60 } }
+      ),
+    ])
     return (
       <div className="min-h-screen bg-[#0d0e14]">
-        <Navbar siteConfig={siteConfig} />
+        <Navbar siteConfig={siteConfig} navPages={navPages} lang={lang} />
         {sections.length > 0 ? (
           <SectionRenderer sections={sections} lang={lang} />
         ) : (

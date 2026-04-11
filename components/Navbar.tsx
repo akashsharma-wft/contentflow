@@ -1,20 +1,28 @@
 // components/Navbar.tsx
 //
-// FIX: app/page.tsx and app/[lang]/page.tsx pass lang={...} to <Navbar>.
-// The Props interface only had 'siteConfig', so TypeScript rejected 'lang'.
-// Solution: add optional lang prop. The component already reads the current
-// language from the pathname internally via parseCurrentLang(), so lang prop
-// is accepted but not needed — this purely fixes the TypeScript error without
-// changing any runtime behaviour.
+// Public navbar — appears on layout==='home' pages only.
+// Nav links are driven by Sanity: the server fetches NAV_PAGES_QUERY and passes
+// the result as `navPages`. The client then filters them by the user's access
+// level so protected links are hidden from unauthenticated visitors.
+//
+// Access rules:
+//   guest (unauthenticated) → pages with access 'guest'
+//   user  (authenticated)   → pages with access 'guest' | 'user'
+//   admin                   → all pages
+//
+// Layout rules:
+//   layout === 'home'      → show Navbar + Footer  ← this component is rendered
+//   layout === 'dashboard' → sidebar (not this Navbar)
+//   layout === 'auth'      → no Navbar
 'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LanguageSwitcher } from './LanguageSwitcher'
-import { APP_NAV_ITEMS, filterNavItems, localizeHref } from '@/lib/navigation'
+import { localizeHref } from '@/lib/navigation'
 import { useUser } from '@/hooks/useUser'
-import type { SanitySiteConfig } from '@/types/sanity'
+import type { SanitySiteConfig, NavPage } from '@/types/sanity'
 
 const LANG_CODES = ['en', 'hi', 'kn'] as const
 type LangCode = (typeof LANG_CODES)[number]
@@ -29,26 +37,39 @@ function parseCurrentLang(pathname: string): LangCode {
   return 'en'
 }
 
+/** Filter nav pages based on the user's role. */
+function filterByAccess(pages: NavPage[], role: string | null | undefined): NavPage[] {
+  if (!pages.length) return []
+  return pages.filter((page) => {
+    if (page.access === 'admin') return role === 'admin'
+    if (page.access === 'user')  return role === 'admin' || (role != null && role !== '')
+    return true // 'guest' — visible to everyone
+  })
+}
+
 interface Props {
   siteConfig: SanitySiteConfig | null
-  /** Optional — accepted for backwards compat but not used (lang is derived from pathname). */
+  navPages?:  NavPage[]
+  /** Optional — accepted for compat; lang is derived from pathname internally. */
   lang?: string
 }
 
-export function Navbar({ siteConfig }: Props) {
+export function Navbar({ siteConfig, navPages = [] }: Props) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const { profile } = useUser()
 
+  // Don't render on studio / login / signup routes
   if (SUPPRESS_ROUTES.some((route) => pathname.startsWith(route))) return null
 
-  // Only show navbar on home page (/ or /{lang})
-  const isHomePage = pathname === '/' || (LANG_CODES as readonly string[]).includes(pathname.slice(1))
+  // Only render on home page (/ or /{lang})
+  const isHomePage =
+    pathname === '/' || (LANG_CODES as readonly string[]).includes(pathname.slice(1))
   if (!isHomePage) return null
 
-  const currentLang = parseCurrentLang(pathname)
-  const siteName = siteConfig?.siteName ?? 'ContentFlow'
-  const navItems = filterNavItems(APP_NAV_ITEMS, profile?.role)
+  const currentLang  = parseCurrentLang(pathname)
+  const siteName     = siteConfig?.siteName ?? 'ContentFlow'
+  const visiblePages = filterByAccess(navPages, profile?.role)
 
   const closeMobile = () => setMobileOpen(false)
 
@@ -84,28 +105,30 @@ export function Navbar({ siteConfig }: Props) {
             </Link>
           </div>
 
-          {/* Center: nav links — desktop only */}
-          {navItems.length > 0 && (
+          {/* Center: dynamic nav links from Sanity — desktop only */}
+          {visiblePages.length > 0 && (
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
-                const url = localizeHref(item.href, currentLang)
-                const isActive = pathname === url || (url !== '/' && pathname.startsWith(url))
+              {visiblePages.map((page) => {
+                const href     = localizeHref(`/${page.slug}`, currentLang)
+                const isActive = pathname === href || (href !== '/' && pathname.startsWith(href))
                 return (
                   <Link
-                    key={item.href}
-                    href={url}
+                    key={page._id}
+                    href={href}
                     className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                      isActive ? 'text-white bg-white/8' : 'text-white/50 hover:text-white hover:bg-white/5'
+                      isActive
+                        ? 'text-white bg-white/8'
+                        : 'text-white/50 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    {item.label}
+                    {page.title}
                   </Link>
                 )
               })}
             </nav>
           )}
 
-          {/* Right: search + language switcher + user */}
+          {/* Right: language switcher + sign in */}
           <div className="flex items-center gap-2">
             <button
               className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
@@ -121,7 +144,7 @@ export function Navbar({ siteConfig }: Props) {
             </div>
 
             <Link
-              href="/login"
+              href={localizeHref('/login', currentLang)}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-500/15 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/25 transition-colors"
               aria-label="Sign in"
             >
@@ -147,25 +170,28 @@ export function Navbar({ siteConfig }: Props) {
                 <LanguageSwitcher />
               </div>
 
-              {navItems.map((item) => {
-                const url = localizeHref(item.href, currentLang)
-                const isActive = pathname === url || (url !== '/' && pathname.startsWith(url))
+              {/* Dynamic nav pages */}
+              {visiblePages.map((page) => {
+                const href     = localizeHref(`/${page.slug}`, currentLang)
+                const isActive = pathname === href || (href !== '/' && pathname.startsWith(href))
                 return (
                   <Link
-                    key={item.href}
-                    href={url}
+                    key={page._id}
+                    href={href}
                     onClick={closeMobile}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                      isActive ? 'text-white bg-white/8' : 'text-white/50 hover:text-white hover:bg-white/5'
+                      isActive
+                        ? 'text-white bg-white/8'
+                        : 'text-white/50 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    {item.label}
+                    {page.title}
                   </Link>
                 )
               })}
 
               <Link
-                href="/login"
+                href={localizeHref('/login', currentLang)}
                 onClick={closeMobile}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors"
               >
@@ -181,7 +207,7 @@ export function Navbar({ siteConfig }: Props) {
         <div className="grid grid-cols-4 h-16">
           {[
             {
-              href: currentLang === 'en' ? '/' : `/${currentLang}`,
+              href:  currentLang === 'en' ? '/' : `/${currentLang}`,
               label: 'Home',
               icon: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -190,7 +216,7 @@ export function Navbar({ siteConfig }: Props) {
               ),
             },
             {
-              href: currentLang === 'en' ? '/' : `/${currentLang}`,
+              href:  localizeHref('/posts', currentLang),
               label: 'Posts',
               icon: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -199,7 +225,7 @@ export function Navbar({ siteConfig }: Props) {
               ),
             },
             {
-              href: '/studio',
+              href:  '/studio',
               label: 'Studio',
               icon: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -208,7 +234,7 @@ export function Navbar({ siteConfig }: Props) {
               ),
             },
             {
-              href: '/login',
+              href:  localizeHref('/login', currentLang),
               label: 'Profile',
               icon: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">

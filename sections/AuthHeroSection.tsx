@@ -1,46 +1,80 @@
-// AuthHeroSection — the left panel of login/signup pages
-// This renders ONLY the left branding panel.
-// The actual form (right panel) is rendered by app/(auth)/login/page.tsx etc.
-// This section is used when you want to CMS-control the auth page copy.
+// sections/AuthHeroSection.tsx
+//
+// LEFT branding panel for login / signup pages.
+// Rendered as a sticky, full-height column on desktop (lg+).
+// Hidden on mobile — the AuthFormSection handles the mobile experience.
+//
+// With the auth layout wrapper being `min-h-screen bg-[#0d0e14] lg:flex lg:flex-wrap`,
+// this section occupies the left 45 % on desktop and is invisible on mobile.
+// AuthFormSection (right panel) takes flex-1 alongside it.
+// AuthLegalSection wraps to a full-width row below both panels.
 
-interface AuthHeroFeature { _key?: string; icon?: string; text: string }
+import type { AuthHeroSection as AuthHeroSectionType } from '@/types/sanity'
 
-interface AuthHeroSectionProps {
-  section: {
-    headline?: string
-    badge?: string
-    features?: AuthHeroFeature[]
-    mode?: 'signin' | 'signup' | 'both'
-  }
+interface Props {
+  section: AuthHeroSectionType
 }
 
-export function AuthHeroSection({ section }: AuthHeroSectionProps) {
+export function AuthHeroSection({ section }: Props) {
+  if (!section) return null
+
   const {
-    headline = 'CMS-driven publishing for engineering teams.',
+    headline  = 'CMS-driven publishing for engineering teams.',
     badge,
-    features = [],
+    features  = [],
+    footerNote = 'Powered by Supabase Auth',
   } = section
 
   return (
-    <div className="flex flex-col justify-center h-full px-8 py-12 max-w-sm">
-      {badge && (
-        <span className="inline-block px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full mb-6 w-fit">
-          {badge}
+    <div className="hidden lg:flex lg:w-[45%] flex-col justify-between p-12 border-r border-white/5 sticky top-0 h-screen bg-[#0d0e14]">
+
+      {/* ── Logo ─────────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-indigo-500 flex items-center justify-center">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path
+              d="M3 9h9m0 0-3-3m3 3-3 3M12 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1"
+              stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        <span className="text-white font-semibold text-lg tracking-tight">ContentFlow</span>
+      </div>
+
+      {/* ── Hero content ──────────────────────────────────────────────────── */}
+      <div className="space-y-10">
+        {badge && (
+          <span className="inline-block px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full">
+            {badge}
+          </span>
+        )}
+
+        <h1 className="text-white text-5xl font-bold leading-tight tracking-tight">
+          {headline}
+        </h1>
+
+        {features.length > 0 && (
+          <ul className="space-y-4">
+            {features.map((f, i) => (
+              <li key={f._key ?? i} className="flex items-center gap-4">
+                <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                  <span className="text-white/50 text-xs font-mono">
+                    {f.icon ?? '✦'}
+                  </span>
+                </div>
+                <span className="text-white/55 text-sm font-medium">{f.text}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* ── Footer note ───────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2">
+        <span className="text-white/25 text-xs uppercase tracking-widest">
+          {footerNote}
         </span>
-      )}
-      <h1 className="text-3xl font-bold text-white leading-snug mb-8">{headline}</h1>
-      {features.length > 0 && (
-        <ul className="space-y-4">
-          {features.map((f, i) => (
-            <li key={f._key ?? i} className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                <span className="text-white/50 text-xs">{f.icon ?? '✦'}</span>
-              </div>
-              <span className="text-white/55 text-sm">{f.text}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      </div>
     </div>
   )
 }

@@ -1,32 +1,34 @@
 // sanity/schemaTypes/documents/page.ts
 import { defineType, defineField } from 'sanity'
+import { DocumentIcon } from '@sanity/icons'
 
 export const pageType = defineType({
   name: 'page',
   title: 'Page',
   type: 'document',
+  icon: DocumentIcon,
   groups: [
-    { name: 'content', title: 'Content', default: true },
+    { name: 'content',  title: 'Content',  default: true },
     { name: 'settings', title: 'Settings' },
-    { name: 'seo', title: 'SEO' },
+    { name: 'seo',      title: 'SEO'       },
   ],
   fields: [
-    // ── Identity ──────────────────────────────────────────────────────
+    // ── Identity ─────────────────────────────────────────────────────────
     defineField({
       name: 'title',
-      title: 'Page Title',
+      title: 'Title',
       type: 'string',
       group: 'content',
-      validation: (Rule) => Rule.required(),
+      validation: R => R.required(),
     }),
     defineField({
       name: 'slug',
-      title: 'Slug (URL)',
+      title: 'Slug',
       type: 'slug',
       group: 'settings',
-      description: 'The URL path. "home" = /, "about" = /about, "posts" = /posts',
+      description: '"home" → /   |   "about" → /about',
       options: { source: 'title', maxLength: 96 },
-      validation: (Rule) => Rule.required(),
+      validation: R => R.required(),
     }),
     defineField({
       name: 'language',
@@ -34,169 +36,100 @@ export const pageType = defineType({
       type: 'string',
       readOnly: true,
       hidden: true,
-      validation: (Rule) =>
-        Rule.required().custom((value) => {
-          if (!value) return 'Language is required'
-          if (!['en', 'hi', 'kn'].includes(value)) return 'Language must be en, hi, or kn'
-          return true
-        }),
     }),
 
-    // ── Access control ────────────────────────────────────────────────
+    // ── Access ───────────────────────────────────────────────────────────
     defineField({
       name: 'access',
-      title: 'Page Access',
-      group: 'settings',
+      title: 'Access',
       type: 'string',
+      group: 'settings',
       options: {
         list: [
-          { title: '🌐 Public — anyone can visit', value: 'public' },
-          { title: '🔒 Member — must be logged in', value: 'member' },
-          { title: '🛡️ Admin — admin role only', value: 'admin' },
+          { title: '🌐 Guest — anyone',          value: 'guest' },
+          { title: '🔒 User — must be signed in', value: 'user'  },
+          { title: '🛡️ Admin — admin role only',  value: 'admin' },
         ],
         layout: 'radio',
       },
-      initialValue: 'public',
-      validation: (Rule) => Rule.required(),
+      initialValue: 'guest',
+      validation: R => R.required(),
     }),
 
-    // ── Layout ────────────────────────────────────────────────────────
+    // ── Layout ───────────────────────────────────────────────────────────
     defineField({
       name: 'layout',
       title: 'Layout',
-      group: 'settings',
       type: 'string',
+      group: 'settings',
       options: {
         list: [
-          { title: '🌐 Public (Navbar + Footer)', value: 'public' },
-          { title: '🖥 Dashboard (Sidebar)', value: 'dashboard' },
-          { title: '🔑 Auth (No chrome)', value: 'auth' },
+          { title: '🏠 Home (Navbar + Footer)', value: 'home'      },
+          { title: '🖥 Dashboard (Sidebar)',    value: 'dashboard' },
+          { title: '🔑 Auth (no chrome)',       value: 'auth'      },
         ],
         layout: 'radio',
       },
-      initialValue: 'public',
+      initialValue: 'home',
+      validation: R => R.required(),
     }),
 
-    // ── Integrations ──────────────────────────────────────────────────
-    defineField({
-      name: 'enablePosthogTracking',
-      title: 'Enable PostHog tracking?',
-      group: 'settings',
-      type: 'boolean',
-      initialValue: true,
-    }),
-
-    // ── Page sections (the page builder array) ────────────────────────
+    // ── Sections ─────────────────────────────────────────────────────────
     defineField({
       name: 'sections',
-      title: 'Page Sections',
-      group: 'content',
-      description: 'Add, remove, and reorder sections. Each section is a configurable block.',
+      title: 'Sections',
       type: 'array',
+      group: 'content',
       of: [
-        // ── Existing ──────────────────────────────────────────────────────
-        { type: 'heroSection' },
-        { type: 'ctaSection' },
-        { type: 'featuredPostsSection' },
-        { type: 'recentPostsSection' },
-        { type: 'richTextSection' },
-        { type: 'statsSection' },
-        { type: 'formSection' },
-
-        // ── Layout ────────────────────────────────────────────────────────
-        { type: 'gridSection' },
-        { type: 'columnsSection' },
-        { type: 'spacerSection' },
-        { type: 'dividerSection' },
-
-        // ── Content ───────────────────────────────────────────────────────
-        { type: 'headingSection' },
-        { type: 'featureListSection' },
-        { type: 'testimonialsSection' },
-        { type: 'faqSection' },
-        { type: 'pricingSection' },
-        { type: 'teamSection' },
-        { type: 'logoBarSection' },
-        { type: 'carouselSection' },
-        { type: 'tableSection' },
-        { type: 'timelineSection' },
-        { type: 'bannerSection' },
-        { type: 'tabsSection' },
-
-        // ── Media ─────────────────────────────────────────────────────────
-        { type: 'imageSection' },
-        { type: 'gallerySection' },
-        { type: 'videoSection' },
-
-        // ── Interactive / Auth ────────────────────────────────────────────
-        { type: 'newsletterSection' },
-        { type: 'contactSection' },
-        { type: 'authHeroSection' },
-        { type: 'loginSection' },
-        { type: 'signupSection' },
-        { type: 'notFoundSection' },
-
-        // ── App pages (each page = one marker block) ──────────────────────
-        { type: 'postsPageSection' },
-        { type: 'analyticsPageSection' },
-        { type: 'settingsPageSection' },
-        { type: 'billingPageSection' },
-        { type: 'adminPageSection' },
-        { type: 'loginPageSection' },
-        { type: 'signupPageSection' },
-        { type: 'postDetailPageSection' },
+        // System sections (predefined inline objects)
+        { type: 'heroSection'           },
+        { type: 'featuresSection'       },
+        { type: 'featuredPostsSection'  },
+        { type: 'recentPostsSection'    },
+        { type: 'ctaSection'            },
+        { type: 'postsSection'          },
+        { type: 'authHeroSection'       },
+        { type: 'authSection'           },
+        { type: 'authLegalSection'      },
+        { type: 'analyticsSection'      },
+        { type: 'navbarSection'         },
+        { type: 'footerSection'         },
+        // Custom sections (reference to section document)
+        { type: 'reference', title: 'Custom Section', to: [{ type: 'section' }] },
       ],
     }),
 
-    // ── SEO ────────────────────────────────────────────────────────────
+    // ── SEO ──────────────────────────────────────────────────────────────
     defineField({
       name: 'seoTitle',
       title: 'SEO Title',
-      group: 'seo',
-      description: 'Overrides page title in <title> tags. Defaults to page title if empty. Max 60 characters.',
       type: 'string',
-      validation: (Rule) => Rule.max(60),
+      group: 'seo',
+      validation: R => R.max(60),
     }),
     defineField({
       name: 'seoDescription',
       title: 'SEO Description',
-      group: 'seo',
       type: 'text',
       rows: 2,
-      validation: (Rule) => Rule.max(160),
-    }),
-    defineField({
-      name: 'ogImage',
-      title: 'Social Share Image',
       group: 'seo',
-      type: 'image',
-      options: { hotspot: true },
+      validation: R => R.max(160),
     }),
   ],
   preview: {
     select: {
-      title: 'title',
-      slug: 'slug.current',
+      title:    'title',
+      slug:     'slug.current',
       language: 'language',
-      access: 'access',
-      layout: 'layout',
+      access:   'access',
+      layout:   'layout',
     },
     prepare({ title, slug, language, access, layout }) {
-      const accessEmoji =
-        access === 'public'
-          ? '🌐'
-          : access === 'member'
-            ? '🔒'
-            : '🛡️'
-      const layoutEmoji =
-        layout === 'dashboard'
-          ? '🖥'
-          : layout === 'auth'
-            ? '🔑'
-            : '🌐'
+      const a = access  === 'guest' ? '🌐' : access  === 'user' ? '🔒' : '🛡️'
+      const l = layout  === 'dashboard' ? '🖥' : layout === 'auth' ? '🔑' : '🏠'
       return {
-        title: title ?? 'Untitled',
-        subtitle: `${language?.toUpperCase() ?? '—'} · /${slug ?? '…'} · ${accessEmoji} ${access} · ${layoutEmoji} ${layout}`,
+        title:    title ?? 'Untitled',
+        subtitle: `${language?.toUpperCase() ?? '—'} · /${slug ?? '…'} · ${a} ${access} · ${l} ${layout}`,
       }
     },
   },

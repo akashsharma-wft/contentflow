@@ -16,11 +16,14 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 interface LoginFormProps {
-  // All strings from Sanity authConfig in the correct language
+  // All strings from Sanity in the correct language
   subheading?: string
   submitLabel?: string
+  emailLabel?: string
   emailPlaceholder?: string
+  passwordLabel?: string
   passwordPlaceholder?: string
+  dividerLabel?: string
   footerText?: string
   footerLinkLabel?: string
   footerLinkHref?: string
@@ -32,8 +35,11 @@ interface LoginFormProps {
 export function LoginForm({
   subheading = 'Sign in to your workspace',
   submitLabel = 'Sign in',
+  emailLabel = 'Email',
   emailPlaceholder = 'you@example.com',
+  passwordLabel = 'Password',
   passwordPlaceholder = 'Your password',
+  dividerLabel = 'or',
   footerText = "Don't have an account?",
   footerLinkLabel = 'Request access',
   footerLinkHref = '/signup',
@@ -153,7 +159,7 @@ export function LoginForm({
           </div>
           <div className="relative flex justify-center">
             <span className="bg-[#13141c] px-3 text-white/20 text-[11px] uppercase tracking-widest">
-              or
+              {dividerLabel}
             </span>
           </div>
         </div>
@@ -165,7 +171,7 @@ export function LoginForm({
           {/* Email */}
           <div className="space-y-1.5">
             <Label className="text-white/45 text-[11px] font-semibold uppercase tracking-wider">
-              Email
+              {emailLabel}
             </Label>
             <Input
               type="email"
@@ -181,7 +187,7 @@ export function LoginForm({
           {/* Password */}
           <div className="space-y-1.5">
             <Label className="text-white/45 text-[11px] font-semibold uppercase tracking-wider">
-              Password
+              {passwordLabel}
             </Label>
             <div className="relative">
               <Input

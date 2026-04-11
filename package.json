@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "cleanup": "dotenv -e .env.local -- npx tsx scripts/cleanup.ts",
-    "seed": "dotenv -e .env.local -- npx tsx scripts/seed.ts"
+    "seed": "dotenv -e .env.local -- npx tsx scripts/seed.ts",
+    "sanity-seed": "sanity exec ./sanity/seed.ts --with-user-token"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

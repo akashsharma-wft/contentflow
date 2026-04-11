@@ -1,7 +1,6 @@
 /**
  * TypeScript types for all Sanity CMS schemas.
- * These match the schema definitions in sanity/schemaTypes/.
- * Keep in sync with schema changes.
+ * Keep in sync with sanity/schemaTypes/.
  */
 
 // ─── Shared ────────────────────────────────────────────────────────────────────
@@ -43,6 +42,7 @@ export type SanityPost = {
   authorAvatar?: string
 }
 
+/** Flat card shape returned by post list queries (coverImage is a resolved URL string). */
 export type SanityPostCard = Pick<
   SanityPost,
   | '_id'
@@ -54,13 +54,14 @@ export type SanityPostCard = Pick<
   | 'tags'
   | 'authorId'
   | 'authorName'
+  | 'authorEmail'
   | 'authorAvatar'
 > & {
   slug: string        // flattened from slug.current
   coverImage?: string // resolved URL
 }
 
-// ─── Block types ───────────────────────────────────────────────────────────────
+// ─── System section types (new schema) ────────────────────────────────────────
 
 export type CtaButton = {
   label?: string
@@ -78,8 +79,106 @@ export type HeroSection = {
   backgroundImage?: SanityImageAsset
   theme?: 'dark' | 'light' | 'gradient'
   layout?: 'centered' | 'split'
+  /** Small social-proof line below CTAs — e.g. "Trusted by 2,000+ publishers". Split layout only. */
   communityText?: string
 }
+
+export type FeaturesFeature = {
+  title: string
+  description?: string
+  icon?: string
+}
+
+export type FeaturesSection = {
+  _type: 'featuresSection'
+  _key: string
+  heading?: string
+  subheading?: string
+  features?: FeaturesFeature[]
+}
+
+export type PostsSection = {
+  _type: 'postsSection'
+  _key: string
+  heading?: string
+  limit?: number
+}
+
+export type AuthSection = {
+  _type: 'authSection'
+  _key: string
+  mode: 'login' | 'signup'
+  heading?: string
+  // Form copy — all optional with fallbacks in the component
+  googleLabel?: string
+  dividerLabel?: string
+  nameLabel?: string
+  namePlaceholder?: string
+  emailLabel?: string
+  emailPlaceholder?: string
+  passwordLabel?: string
+  passwordPlaceholder?: string
+  submitLabel?: string
+  footerText?: string
+  footerLinkLabel?: string
+  footerLinkHref?: string
+  showGoogleOAuth?: boolean
+  showEmailPassword?: boolean
+}
+
+export type AnalyticsSection = {
+  _type: 'analyticsSection'
+  _key: string
+  heading?: string
+}
+
+export type NavbarLink = {
+  label: string
+  href: string
+}
+
+export type NavbarSection = {
+  _type: 'navbarSection'
+  _key: string
+  logo?: string
+  links?: NavbarLink[]
+}
+
+export type FooterLink = {
+  label: string
+  href: string
+}
+
+export type FooterSection = {
+  _type: 'footerSection'
+  _key: string
+  tagline?: string
+  copyright?: string
+  links?: FooterLink[]
+}
+
+/** A dereferenced custom section document (from a reference in page.sections). */
+export type SanityCustomSection = {
+  _type: 'section'
+  _id: string
+  title: string
+  language?: string
+  components?: SanityComponent[]
+}
+
+export type SanityComponent = {
+  _id: string
+  name: string
+  type: 'button' | 'input' | 'select' | 'container' | 'form' | 'grid'
+  config?: {
+    label?: string
+    placeholder?: string
+    variant?: string
+    className?: string
+  }
+}
+
+// ─── Legacy section types (kept for backward compat with existing data) ────────
 
 export type CtaSection = {
   _type: 'ctaSection'
@@ -162,8 +261,6 @@ export type FormSection = {
   footerLinkLabel?: string
   footerLinkHref?: string
 }
-
-// ─── Content Blocks ────────────────────────────────────────────────────────
 
 export type HeadingSection = {
   _type: 'headingSection'
@@ -334,8 +431,6 @@ export type TabsSection = {
   tabs?: TabsItem[]
 }
 
-// ─── Media & Interactive Blocks ────────────────────────────────────────────
-
 export type ImageSection = {
   _type: 'imageSection'
   _key: string
@@ -408,6 +503,7 @@ export type ContactSection = {
 }
 
 export type AuthHeroFeature = {
+  _key?: string
   icon?: string
   text: string
 }
@@ -418,7 +514,20 @@ export type AuthHeroSection = {
   headline?: string
   badge?: string
   features?: AuthHeroFeature[]
-  mode?: 'signin' | 'signup' | 'both'
+  footerNote?: string
+  mode?: 'login' | 'signup' | 'both'
+}
+
+export type AuthLegalLink = {
+  _key?: string
+  label: string
+  href?: string
+}
+
+export type AuthLegalSection = {
+  _type: 'authLegalSection'
+  _key: string
+  links?: AuthLegalLink[]
 }
 
 export type LoginSection = {
@@ -446,8 +555,6 @@ export type NotFoundSection = {
   ctaHref?: string
   showSearch?: boolean
 }
-
-// ─── Layout Blocks ────────────────────────────────────────────────────────
 
 export type GridCard = {
   heading: string
@@ -489,9 +596,30 @@ export type DividerSection = {
   style?: 'line' | 'dots' | 'invisible'
 }
 
-// Union of all section types
+// ─── Legacy app-page marker sections ──────────────────────────────────────────
+
+export type PostsPageSection    = { _type: 'postsPageSection';    _key: string }
+export type AnalyticsPageSection= { _type: 'analyticsPageSection';_key: string }
+export type SettingsPageSection = { _type: 'settingsPageSection'; _key: string }
+export type BillingPageSection  = { _type: 'billingPageSection';  _key: string }
+export type AdminPageSection    = { _type: 'adminPageSection';    _key: string }
+export type LoginPageSection    = { _type: 'loginPageSection';    _key: string; heading?: string; description?: string }
+export type SignupPageSection   = { _type: 'signupPageSection';   _key: string; heading?: string; description?: string }
+export type PostDetailPageSection = { _type: 'postDetailPageSection'; _key: string; heading?: string; description?: string }
+
+// ─── SanitySection union ──────────────────────────────────────────────────────
+
 export type SanitySection =
+  // New system sections
   | HeroSection
+  | FeaturesSection
+  | PostsSection
+  | AuthSection
+  | AnalyticsSection
+  | NavbarSection
+  | FooterSection
+  | SanityCustomSection
+  // Legacy sections (still in existing Sanity data)
   | CtaSection
   | FeaturedPostsSection
   | RecentPostsSection
@@ -516,6 +644,7 @@ export type SanitySection =
   | NewsletterSection
   | ContactSection
   | AuthHeroSection
+  | AuthLegalSection
   | LoginSection
   | SignupSection
   | NotFoundSection
@@ -538,18 +667,57 @@ export type SanityPage = {
   _id: string
   _type: 'page'
   title: string
+  /** Full slug object returned by PAGE_BY_SLUG_AND_LANG_QUERY. Use slug.current. */
   slug: { current: string }
   language?: string
-  access?: 'public' | 'member' | 'admin'
-  layout?: 'public' | 'dashboard' | 'auth'
-  enablePosthogTracking?: boolean
+  access?: 'guest' | 'user' | 'admin'
+  layout?: 'home' | 'dashboard' | 'auth'
   sections?: SanitySection[]
   seoTitle?: string
   seoDescription?: string
-  ogImage?: SanityImageAsset
+  /** Resolved OG image URL (optional, may be absent if not set). */
+  ogImage?: string
 }
 
-// ─── Singletons ────────────────────────────────────────────────────────────────
+// ─── Site config ───────────────────────────────────────────────────────────────
+
+/**
+ * Site config type.
+ * New schema fields: title, language, siteName.
+ * Legacy optional fields kept so existing components (Footer, DashboardLayout)
+ * still typecheck without modification.
+ */
+export type SanitySiteConfig = {
+  _id: string
+  _type: 'siteConfig'
+  /** New schema: document title (browser tab). */
+  title: string
+  language: string
+  siteName: string
+  // ── Legacy optional fields (populated from old siteConfig documents) ──────
+  tagline?: string
+  logo?: SanityImageAsset
+  favicon?: SanityImageAsset
+  publicNav?: NavLink[]
+  sidebarNav?: SidebarNavLink[]
+  footerTagline?: string
+  footerLinks?: { label: string; href: string }[]
+  copyright?: string
+}
+
+// ─── Shared nav / link types ──────────────────────────────────────────────────
+
+/**
+ * Lightweight page stub returned by NAV_PAGES_QUERY.
+ * Used to build the dynamic public Navbar.
+ */
+export type NavPage = {
+  _id:    string
+  title:  string
+  slug:   string
+  access: 'guest' | 'user' | 'admin'
+  layout: 'home' | 'auth' | 'dashboard'
+}
 
 export type NavLink = {
   label: string
@@ -565,30 +733,12 @@ export type SidebarNavLink = {
   adminOnly?: boolean
 }
 
-export type FooterLink = {
-  label: string
-  href: string
-}
-
-export type SanitySiteConfig = {
-  _id: string
-  _type: 'siteConfig'
-  siteName: string
-  tagline?: string
-  logo?: SanityImageAsset
-  favicon?: SanityImageAsset
-  publicNav?: NavLink[]
-  sidebarNav?: SidebarNavLink[]
-  footerTagline?: string
-  footerLinks?: FooterLink[]
-  copyright?: string
-}
-
 export type AuthFeatureBullet = {
   text: string
   icon?: string
 }
 
+/** @deprecated Removed from schema — queries return null for new installs. */
 export type SanityAuthConfig = {
   _id: string
   _type: 'authConfig'
@@ -611,11 +761,7 @@ export type SanityAuthConfig = {
   leftPanelFeatures?: AuthFeatureBullet[]
 }
 
-// types/sanity.ts — add these new types at the bottom of your existing file
-// (keep everything that's already there, just append these)
-
-// ─── App Page Config Singletons ────────────────────────────────────────────────
-
+/** @deprecated Removed from schema. */
 export type SanityPostsPageConfig = {
   heading?: string
   subheading?: string
@@ -635,6 +781,7 @@ export type SanityPostsPageConfig = {
   emptyCtaLabel?: string
 }
 
+/** @deprecated Removed from schema. */
 export type SanityAnalyticsConfig = {
   heading?: string
   subheading?: string
@@ -648,6 +795,7 @@ export type SanityAnalyticsConfig = {
   featureFlagLabel?: string
 }
 
+/** @deprecated Removed from schema. */
 export type SanitySettingsPageConfig = {
   heading?: string
   subheading?: string
@@ -667,6 +815,7 @@ export type SanitySettingsPageConfig = {
   deleteAccountLabel?: string
 }
 
+/** @deprecated Removed from schema. */
 export type SanityBillingPageConfig = {
   heading?: string
   subheading?: string
@@ -693,6 +842,7 @@ export type SanityBillingPageConfig = {
   currentPlanButtonLabel?: string
 }
 
+/** @deprecated Removed from schema. */
 export type SanityAdminPageConfig = {
   heading?: string
   subheading?: string
@@ -704,15 +854,3 @@ export type SanityAdminPageConfig = {
   footerNote?: string
   emptyLabel?: string
 }
-
-// ─── App page marker section types ─────────────────────────────────────────────
-// Add these to your SanitySection union type too
-
-export type PostsPageSection   = { _type: 'postsPageSection';   _key: string }
-export type AnalyticsPageSection = { _type: 'analyticsPageSection'; _key: string }
-export type SettingsPageSection = { _type: 'settingsPageSection'; _key: string }
-export type BillingPageSection  = { _type: 'billingPageSection';  _key: string }
-export type AdminPageSection    = { _type: 'adminPageSection';    _key: string }
-export type LoginPageSection    = { _type: 'loginPageSection';    _key: string; heading?: string; description?: string }
-export type SignupPageSection   = { _type: 'signupPageSection';   _key: string; heading?: string; description?: string }
-export type PostDetailPageSection = { _type: 'postDetailPageSection'; _key: string; heading?: string; description?: string }

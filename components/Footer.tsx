@@ -8,7 +8,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { APP_NAV_ITEMS, ICON_MAP, filterNavItems, localizeHref } from '@/lib/navigation'
+import { APP_NAV_ITEMS, ICON_MAP, filterNavItems, localizeHref, getLocalizedLabel } from '@/lib/navigation'
 import { useUser } from '@/hooks/useUser'
 import type { SanitySiteConfig } from '@/types/sanity'
 
@@ -107,7 +107,7 @@ export function Footer({ siteConfig }: Props) {
                 return (
                   <li key={item.href}>
                     <Link href={url} className="text-white/50 text-sm hover:text-white transition-colors">
-                      {item.label}
+                      {getLocalizedLabel(item.label, currentLang)}
                     </Link>
                   </li>
                 )

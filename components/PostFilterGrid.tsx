@@ -8,6 +8,12 @@ import type { SanityPostCard } from '@/types/sanity'
 const LANG_LABELS: Record<string, string> = { en: 'EN', hi: 'HI', kn: 'KN' }
 const PAGE_SIZE = 6
 
+const UI_STRINGS: Record<string, { allPosts: string; noResults: string; loadMore: string }> = {
+  en: { allPosts: 'All Posts',         noResults: 'No posts found.',                    loadMore: 'Load More Stories'              },
+  hi: { allPosts: 'सभी पोस्ट',         noResults: 'कोई पोस्ट नहीं मिली।',              loadMore: 'और कहानियाँ लोड करें'           },
+  kn: { allPosts: 'ಎಲ್ಲಾ ಪೋಸ್ಟ್‌ಗಳು', noResults: 'ಯಾವುದೇ ಪೋಸ್ಟ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ.', loadMore: 'ಹೆಚ್ಚಿನ ಕಥೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಿ' },
+}
+
 interface Props {
   posts: SanityPostCard[]
   lang: string
@@ -17,6 +23,7 @@ interface Props {
 export function PostFilterGrid({ posts, lang, viewAllLabel }: Props) {
   const [activeTag, setActiveTag] = useState<string>('all')
   const [visible, setVisible] = useState(PAGE_SIZE)
+  const ui = UI_STRINGS[lang] ?? UI_STRINGS.en
 
   // Extract unique tags from all posts
   const tags = useMemo(() => {
@@ -49,7 +56,7 @@ export function PostFilterGrid({ posts, lang, viewAllLabel }: Props) {
                 : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
             }`}
           >
-            All Posts
+            {ui.allPosts}
           </button>
           {tags.map((tag) => (
             <button
@@ -68,7 +75,7 @@ export function PostFilterGrid({ posts, lang, viewAllLabel }: Props) {
       )}
 
       {shown.length === 0 ? (
-        <p className="text-white/30 text-sm py-8 text-center">No posts found.</p>
+        <p className="text-white/30 text-sm py-8 text-center">{ui.noResults}</p>
       ) : (
         <>
           {/* Desktop: 3-col grid / Mobile: 1-col list */}
@@ -147,7 +154,7 @@ export function PostFilterGrid({ posts, lang, viewAllLabel }: Props) {
                 onClick={() => setVisible((v) => v + PAGE_SIZE)}
                 className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white text-sm font-medium rounded-xl transition-colors inline-flex items-center gap-2"
               >
-                Load More Stories
+                {ui.loadMore}
                 <svg className="w-4 h-4 opacity-50" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>

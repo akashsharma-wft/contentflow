@@ -1,23 +1,17 @@
-// sanity/components/LanguageProvider.tsx
-//
-// Wraps the Studio layout with a language context so that the active
-// language (chosen from the top-bar dropdown) persists across navigation.
-// This is the component shown in the screenshot:
-//   layout: props => <LanguageProvider>{props.renderDefault(props)}</LanguageProvider>
-//
-// The @sanity/document-internationalization plugin reads this context and
-// automatically filters document lists to the selected language.
-
 'use client'
 
-import { createContext, useContext, useState, useCallback } from 'react'
-import type { ReactNode } from 'react'
+// sanity/components/LanguageProvider.tsx
+// Wraps the Studio layout so the active language persists across navigation.
+// Also syncs with languageStore so the structure builder can read it.
 
-type Lang = 'en' | 'hi' | 'kn'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import type { ReactNode } from 'react'
+import { setStudioLanguage } from '../lib/languageStore'
+import type { Language } from '../lib/translations'
 
 interface LanguageContextValue {
-  currentLanguage: Lang
-  setLanguage: (lang: Lang) => void
+  currentLanguage: Language
+  setLanguage: (lang: Language) => void
 }
 
 const LanguageContext = createContext<LanguageContextValue>({
@@ -29,16 +23,18 @@ export function useStudioLanguage() {
   return useContext(LanguageContext)
 }
 
-interface LanguageProviderProps {
-  children: ReactNode
-}
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [currentLanguage, setCurrentLanguage] = useState<Language>('en')
 
-export function LanguageProvider({ children }: LanguageProviderProps) {
-  const [currentLanguage, setCurrentLanguage] = useState<Lang>('en')
-
-  const setLanguage = useCallback((lang: Lang) => {
+  const setLanguage = useCallback((lang: Language) => {
     setCurrentLanguage(lang)
+    setStudioLanguage(lang)
   }, [])
+
+  // Sync initial value into the module store on mount
+  useEffect(() => {
+    setStudioLanguage(currentLanguage)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <LanguageContext.Provider value={{ currentLanguage, setLanguage }}>

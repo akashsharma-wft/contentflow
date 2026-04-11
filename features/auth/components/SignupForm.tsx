@@ -17,9 +17,13 @@ import { cn } from '@/lib/utils'
 interface SignupFormProps {
   subheading?: string
   submitLabel?: string
+  nameLabel?: string
   namePlaceholder?: string
+  emailLabel?: string
   emailPlaceholder?: string
+  passwordLabel?: string
   passwordPlaceholder?: string
+  dividerLabel?: string
   footerText?: string
   footerLinkLabel?: string
   footerLinkHref?: string
@@ -31,9 +35,13 @@ interface SignupFormProps {
 export function SignupForm({
   subheading = 'Join the ContentFlow workspace',
   submitLabel = 'Create account',
+  nameLabel = 'Name',
   namePlaceholder = 'Your full name',
+  emailLabel = 'Email',
   emailPlaceholder = 'you@example.com',
+  passwordLabel = 'Password',
   passwordPlaceholder = 'Min 8 characters',
+  dividerLabel = 'or',
   footerText = 'Already have an account?',
   footerLinkLabel = 'Sign in',
   footerLinkHref = '/login',
@@ -136,7 +144,7 @@ export function SignupForm({
           </div>
           <div className="relative flex justify-center">
             <span className="bg-[#13141c] px-3 text-white/20 text-[11px] uppercase tracking-widest">
-              or
+              {dividerLabel}
             </span>
           </div>
         </div>
@@ -149,7 +157,7 @@ export function SignupForm({
           {/* Full name */}
           <div className="space-y-1.5">
             <Label className="text-white/45 text-[11px] font-semibold uppercase tracking-wider">
-              Name
+              {nameLabel}
             </Label>
             <Input
               type="text"
@@ -165,7 +173,7 @@ export function SignupForm({
           {/* Email */}
           <div className="space-y-1.5">
             <Label className="text-white/45 text-[11px] font-semibold uppercase tracking-wider">
-              Email
+              {emailLabel}
             </Label>
             <Input
               type="email"
@@ -181,7 +189,7 @@ export function SignupForm({
           {/* Password */}
           <div className="space-y-1.5">
             <Label className="text-white/45 text-[11px] font-semibold uppercase tracking-wider">
-              Password
+              {passwordLabel}
             </Label>
             <div className="relative">
               <Input
