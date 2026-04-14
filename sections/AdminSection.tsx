@@ -1,48 +1,51 @@
 // sections/AdminSection.tsx
 //
-// FIX: SectionRenderer calls <AdminSection lang={lang} /> but the component
-// accepted no arguments. Added lang prop to the signature.
-// Service role key stays server-side only.
+// Server component that:
+//   1. Fetches all users (service role, bypasses RLS)
+//   2. Fetches all admin invites + access requests (service role)
+//   3. Renders AdminUsersTable (existing) + AdminInvitePanel (new)
 import 'server-only'
-import { sanityClient } from '@/lib/sanity/client'
-import { ADMIN_PAGE_CONFIG_QUERY } from '@/lib/sanity/queries'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/supabase'
+import type { AdminDatabase } from '@/types/admin'
+import type { SectionAdminContent } from '@/types/sanity'
+import type { AdminInviteRow } from '@/types/admin'
 import { AdminUsersTable } from '@/features/admin/components/AdminUsersTable'
-
-export type AdminConfig = {
-  heading?: string
-  subheading?: string
-  totalUsersLabel?: string
-  colUser?: string
-  colPlan?: string
-  colRole?: string
-  colJoined?: string
-  footerNote?: string
-  emptyLabel?: string
-}
+import { AdminInvitePanel } from '@/features/admin/components/AdminInvitePanel'
 
 interface Props {
-  lang?: string
+  lang?:    string
+  content?: SectionAdminContent
 }
 
-export async function AdminSection({ lang: _lang = 'en' }: Props) {
-  const [config, users] = await Promise.all([
-    sanityClient.fetch<AdminConfig | null>(ADMIN_PAGE_CONFIG_QUERY),
-    getAllUsers(),
-  ])
-
-  return <AdminUsersTable users={users} config={config ?? {}} />
-}
-
-async function getAllUsers() {
-  const adminClient = createAdminClient<Database>(
+function adminDb() {
+  return createAdminClient<AdminDatabase>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
+}
 
-  const { data, error } = await adminClient
+export async function AdminSection({ content = {} }: Props) {
+  const [users, { invites, requests }] = await Promise.all([
+    getAllUsers(),
+    getPendingInvitesAndRequests(),
+  ])
+
+  return (
+    <div>
+      <AdminUsersTable users={users} config={content} />
+      <AdminInvitePanel
+        initialInvites={invites}
+        initialRequests={requests}
+        config={content}
+      />
+    </div>
+  )
+}
+
+async function getAllUsers() {
+  const db = adminDb()
+  const { data, error } = await db
     .from('profiles')
     .select('*')
     .order('created_at', { ascending: false })
@@ -51,6 +54,53 @@ async function getAllUsers() {
     console.error('AdminSection: Failed to fetch users', error)
     return []
   }
-
   return data ?? []
+}
+
+async function getPendingInvitesAndRequests(): Promise<{
+  invites:  AdminInviteRow[]
+  requests: AdminInviteRow[]
+}> {
+  const db = adminDb()
+
+  const { data: rows, error } = await db
+    .from('admin_invites')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('AdminSection: Failed to fetch invites', error)
+    return { invites: [], requests: [] }
+  }
+
+  // Enrich with profile display names
+  const profileIds = new Set<string>()
+  for (const row of rows ?? []) {
+    if (row.user_id)    profileIds.add(row.user_id)
+    if (row.invited_by) profileIds.add(row.invited_by)
+  }
+
+  const profileMap = new Map<string, string>()
+  if (profileIds.size > 0) {
+    const { data: profiles } = await db
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', Array.from(profileIds))
+
+    for (const p of profiles ?? []) {
+      profileMap.set(p.id, p.display_name ?? p.email ?? p.id)
+    }
+  }
+
+  const enriched: AdminInviteRow[] = (rows ?? []).map((row) => ({
+    ...row,
+    requester_name:  row.user_id    ? (profileMap.get(row.user_id)    ?? null) : null,
+    invited_by_name: row.invited_by ? (profileMap.get(row.invited_by) ?? null) : null,
+  }))
+
+  return {
+    invites:  enriched.filter((r) => r.type === 'invite'),
+    requests: enriched.filter((r) => r.type === 'request'),
+  }
 }

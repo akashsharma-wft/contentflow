@@ -1,31 +1,19 @@
 // features/analytics/components/PostHogEventsClient.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { usePostHog } from 'posthog-js/react'
 import { useUser } from '@/hooks/useUser'
-import { ToggleRight, Loader2, Activity } from 'lucide-react'
+import { ToggleRight, Loader2, Activity, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-interface AnalyticsConfig {
-  heading?: string
-  subheading?: string
-  eventsLabel?: string
-  usersLabel?: string
-  avgSessionLabel?: string
-  liveStreamLabel?: string
-  refreshLabel?: string
-  emptyTitle?: string
-  emptyBody?: string
-  featureFlagLabel?: string
-}
+import type { SectionAnalyticsContent } from '@/types/sanity'
 
 interface ServerFlags {
   showFeaturedBanner: boolean
 }
 
 interface PostHogEventsClientProps {
-  config: AnalyticsConfig
+  config: SectionAnalyticsContent
   serverFlags: ServerFlags
 }
 
@@ -72,6 +60,9 @@ function formatProps(properties: Record<string, unknown>): string {
     .join(' · ')
 }
 
+const PAGE_SIZE     = 10
+const MAX_PAGE_BTNS = 5
+
 export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClientProps) {
   const posthog = usePostHog()
   const { user } = useUser()
@@ -83,6 +74,7 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
   const [customEvents, setCustomEvents] = useState<LiveEvent[]>([])
   const [systemEvents, setSystemEvents] = useState<LiveEvent[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [page, setPage] = useState(1)
 
   async function refreshEvents() {
     setIsRefreshing(true)
@@ -140,14 +132,39 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
     ? [...customEvents, ...systemEvents]
     : events
 
+  // Reset to page 1 whenever the event list or sort mode changes
+  // Use events.length (stable state) — not displayedEvents.length (derived, new ref every render)
+  const resetPage = useCallback(() => setPage(1), [])
+  useEffect(() => { resetPage() }, [sortMode, events.length, resetPage])
+
+  // Pagination calculations (same pattern as PostsTable)
+  const totalPages   = Math.max(1, Math.ceil(displayedEvents.length / PAGE_SIZE))
+  const safePage     = Math.min(page, totalPages)
+  const pageStart    = (safePage - 1) * PAGE_SIZE
+  const visibleEvents = displayedEvents.slice(pageStart, pageStart + PAGE_SIZE)
+
+  const halfWindow  = Math.floor(MAX_PAGE_BTNS / 2)
+  const winStart    = Math.max(1, Math.min(safePage - halfWindow, totalPages - MAX_PAGE_BTNS + 1))
+  const winEnd      = Math.min(totalPages, winStart + MAX_PAGE_BTNS - 1)
+  const pageButtons = Array.from({ length: winEnd - winStart + 1 }, (_, i) => winStart + i)
+
+  // CMS pagination labels
+  const showingLabel = config.showingLabel ?? 'Showing'
+  const prevLabel    = config.prevLabel    ?? 'Prev'
+  const nextLabel    = config.nextLabel    ?? 'Next'
+
+  // Compute eventsToday from the full events array (not the paginated slice)
+  const todayStr = new Date().toDateString()
+  const eventsToday = events.filter(e => new Date(e.timestamp).toDateString() === todayStr).length
+
   const statCards = [
-    { label: config.eventsLabel ?? 'Events Today', value: isLoading ? '—' : `${stats.eventsToday}+` },
+    { label: config.eventsLabel ?? 'Events Today', value: isLoading ? '—' : `${eventsToday}+` },
     { label: config.usersLabel ?? 'Unique Users', value: isLoading ? '—' : stats.uniqueUsers.toString() },
     { label: config.avgSessionLabel ?? 'Avg. Session', value: isLoading ? '—' : stats.avgSession },
   ]
 
   return (
-    <div className="py-6 space-y-5 max-w-[900px]">
+    <div className="space-y-5 max-w-[900px]">
       <div>
         <h1 className="text-white text-2xl font-bold tracking-tight">
           {config.heading ?? 'PostHog Events'}
@@ -211,24 +228,72 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
-            {displayedEvents.map((event, i) => {
-              const style = getEventStyle(event.event)
-              return (
-                <div key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors">
-                  <span className="text-white/20 text-[11px] font-mono w-16 shrink-0 tabular-nums">
-                    {timeAgo(event.timestamp)}
-                  </span>
-                  <span className={`px-2.5 py-1 text-[10px] font-semibold font-mono rounded-md shrink-0 ${style.bg} ${style.text}`}>
-                    {style.label}
-                  </span>
-                  <span className="text-white/30 text-xs font-mono truncate flex-1">
-                    {formatProps(event.properties)}
-                  </span>
+          <>
+            <div className="divide-y divide-white/5">
+              {visibleEvents.map((event, i) => {
+                const style = getEventStyle(event.event)
+                return (
+                  <div key={pageStart + i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/2 transition-colors">
+                    <span className="text-white/20 text-[11px] font-mono w-16 shrink-0 tabular-nums">
+                      {timeAgo(event.timestamp)}
+                    </span>
+                    <span className={`px-2.5 py-1 text-[10px] font-semibold font-mono rounded-md shrink-0 ${style.bg} ${style.text}`}>
+                      {style.label}
+                    </span>
+                    <span className="text-white/30 text-xs font-mono truncate flex-1">
+                      {formatProps(event.properties)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Pagination footer */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-white/5 flex-wrap gap-2">
+              <span className="text-white/25 text-[10px] uppercase tracking-widest font-mono">
+                {showingLabel}{' '}
+                {displayedEvents.length === 0 ? 0 : pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, displayedEvents.length)}{' '}
+                / {displayedEvents.length}
+              </span>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    className="p-1 rounded text-white/30 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={13} />
+                  </button>
+
+                  {pageButtons.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={cn(
+                        'min-w-6 h-6 px-1.5 text-[10px] font-mono rounded transition-colors cursor-pointer',
+                        p === safePage
+                          ? 'bg-indigo-500/20 border border-indigo-500/40 text-indigo-300'
+                          : 'text-white/30 hover:text-white/60 border border-transparent hover:border-white/10',
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    className="p-1 rounded text-white/30 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={13} />
+                  </button>
                 </div>
-              )
-            })}
-          </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -244,8 +309,8 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
             </div>
             <p className="text-white/35 text-xs mt-1 ml-5">
               {featureFlagEnabled
-                ? 'Enabled — evaluated server-side via PostHog Node SDK'
-                : 'Disabled — toggle in PostHog dashboard to enable'}
+                ? (config.featureFlagEnabledNote ?? 'Enabled — evaluated server-side via PostHog Node SDK')
+                : (config.featureFlagDisabledNote ?? 'Disabled — toggle in PostHog dashboard to enable')}
             </p>
           </div>
           <div
@@ -263,7 +328,9 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span className="text-white/25 text-[10px] font-mono uppercase">Connected to PostHog</span>
+          <span className="text-white/25 text-[10px] font-mono uppercase">
+            {config.connectedLabel ?? 'Connected to PostHog'}
+          </span>
         </div>
         <a
           href="https://us.posthog.com"
@@ -271,7 +338,7 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
           rel="noopener noreferrer"
           className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-mono uppercase tracking-widest rounded-lg transition-colors cursor-pointer"
         >
-          Configure_PostHog
+          {config.ctaLabel ?? 'Configure_PostHog'}
         </a>
       </div>
     </div>

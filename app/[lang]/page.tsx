@@ -31,9 +31,6 @@
 
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { format } from 'date-fns'
-import { PortableText } from '@portabletext/react'
 import { createClient as createSupabaseServer } from '@/lib/supabase/server'
 import { getSanityClient } from '@/lib/sanity/server-client'
 import { sanityClient } from '@/lib/sanity/client'
@@ -45,6 +42,7 @@ import {
   SITE_CONFIG_QUERY,
   NAV_PAGES_QUERY,
   POST_LANG_VARIANTS_QUERY,
+  POST_DETAIL_SECTIONS_QUERY,
 } from '@/lib/sanity/queries'
 import {
   isSupportedLang,
@@ -56,9 +54,21 @@ import {
 import { buildMetadata } from '@/lib/seo'
 import { SectionRenderer } from '@/sections/SectionRenderer'
 import { DashboardLayout } from '@/features/dashboard/components/DashboardLayout'
+import { PostDetail } from '@/features/posts/components/PostDetail'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
-import type { SanityPage, SanityPost, SanitySiteConfig, NavPage } from '@/types/sanity'
+import type {
+  SanityPage,
+  SanityPost,
+  SanitySiteConfig,
+  NavPage,
+  SanityPageSection,
+  SectionPostDetailHeaderContent,
+  SectionPostDetailMetaContent,
+  SectionPostDetailBodyContent,
+  SectionPostDetailTagsContent,
+  SectionPostDetailBackLinkContent,
+} from '@/types/sanity'
 
 export const revalidate = 60
 
@@ -175,6 +185,26 @@ async function LanguageHomePage({ lang }: { lang: SupportedLang }) {
   return <RenderPage page={page} lang={lang} />
 }
 
+// ── Post detail config assembler ──────────────────────────────────────────────
+
+function assemblePostDetailConfig(sections: SanityPageSection[]) {
+  const header:   SectionPostDetailHeaderContent   = {}
+  const meta:     SectionPostDetailMetaContent     = {}
+  const body:     SectionPostDetailBodyContent     = {}
+  const tags:     SectionPostDetailTagsContent     = {}
+  const backLink: SectionPostDetailBackLinkContent = {}
+
+  for (const s of sections) {
+    if (s.sectionType === 'postDetailHeader'   && s.postDetailHeader)   Object.assign(header,   s.postDetailHeader)
+    if (s.sectionType === 'postDetailMeta'     && s.postDetailMeta)     Object.assign(meta,     s.postDetailMeta)
+    if (s.sectionType === 'postDetailBody'     && s.postDetailBody)     Object.assign(body,     s.postDetailBody)
+    if (s.sectionType === 'postDetailTags'     && s.postDetailTags)     Object.assign(tags,     s.postDetailTags)
+    if (s.sectionType === 'postDetailBackLink' && s.postDetailBackLink) Object.assign(backLink, s.postDetailBackLink)
+  }
+
+  return { header, meta, body, tags, backLink }
+}
+
 // ── English slug page (/login, /signup, /posts, etc.) ─────────────────────────
 
 async function EnglishSlugPage({ slug }: { slug: string }) {
@@ -197,12 +227,74 @@ async function EnglishSlugPage({ slug }: { slug: string }) {
   )
 
   if (post) {
-    const variants = await sanityClient.fetch<SlugEntry[]>(
-      POST_LANG_VARIANTS_QUERY,
-      { slug },
-      { next: { revalidate: 60 } }
+    const [variants, adjacentRaw, sectionDocs] = await Promise.all([
+      sanityClient.fetch<SlugEntry[]>(POST_LANG_VARIANTS_QUERY, { slug }, { next: { revalidate: 60 } }),
+      client.fetch<{ slug: string }[]>(
+        `*[_type == "post" && language == "en" && defined(publishedAt) && !(_id in path("drafts.**"))] | order(publishedAt desc) { "slug": slug.current }`
+      ),
+      client.fetch<SanityPageSection[]>(POST_DETAIL_SECTIONS_QUERY, { lang: 'en' }),
+    ])
+
+    const orderedSlugs = adjacentRaw.map((p) => p.slug)
+    const currentIndex = orderedSlugs.indexOf(slug)
+    const prevSlug = currentIndex < orderedSlugs.length - 1 ? orderedSlugs[currentIndex + 1] : null
+    const nextSlug = currentIndex > 0 ? orderedSlugs[currentIndex - 1] : null
+
+    const variantMap = Object.fromEntries(variants.map((v) => [v.language, v.slug]))
+    const { header, meta, body, tags, backLink } = assemblePostDetailConfig(sectionDocs ?? [])
+
+    const postData = {
+      _id:          post._id,
+      title:        post.title,
+      slug:         typeof post.slug === 'string' ? post.slug : (post.slug as { current: string }).current,
+      body:         (post.body ?? []) as unknown[],
+      tags:         post.tags ?? [],
+      featured:     post.featured ?? false,
+      publishedAt:  post.publishedAt ?? null,
+      coverImage:   (post.coverImage as unknown as string | null | undefined) ?? null,
+      authorId:     post.authorId,
+      authorName:   post.authorName,
+      authorEmail:  post.authorEmail,
+      authorAvatar: post.authorAvatar,
+    }
+
+    return (
+      <DashboardLayout lang="en">
+        {variants.length > 1 && (
+          <div className="flex items-center gap-2 mb-2 px-5 lg:px-8 pt-4">
+            {SUPPORTED_LANGUAGES.map((l) => {
+              const targetSlug = variantMap[l]
+              if (!targetSlug) return null
+              const url = l === 'en' ? `/${targetSlug}` : `/${l}/${targetSlug}`
+              return (
+                <a
+                  key={l}
+                  href={url}
+                  className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${
+                    l === 'en'
+                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                      : 'text-white/30 hover:text-white/60'
+                  }`}
+                >
+                  {LANG_LABELS[l as SupportedLang]?.toUpperCase() ?? l.toUpperCase()}
+                </a>
+              )
+            })}
+          </div>
+        )}
+        <PostDetail
+          post={postData}
+          prevSlug={prevSlug}
+          nextSlug={nextSlug}
+          lang="en"
+          headerContent={header}
+          metaContent={meta}
+          bodyContent={body}
+          tagsContent={tags}
+          backLinkContent={{ ...backLink, backHref: backLink.backHref ?? '/posts' }}
+        />
+      </DashboardLayout>
     )
-    return <PostDetail post={post} lang="en" variants={variants} />
   }
 
   notFound()
@@ -255,8 +347,8 @@ async function RenderPage({
     )
   }
 
-  // Auth layout (no chrome) — lg:flex lg:flex-wrap assembles the 3-section layout:
-  // authHeroSection (left 45%) + authSection (right flex-1) + authLegalSection (w-full below)
+  // Auth layout (no chrome) — lg:flex assembles the 2-section layout:
+  // authHeroSection (left 45%) + authSection (right flex-1)
   if (access.isAuth) {
     return sections.length > 0 ? (
       <div className="min-h-screen bg-[#0d0e14] lg:flex lg:flex-wrap">
@@ -292,109 +384,3 @@ async function RenderPage({
   )
 }
 
-// ── Post detail ───────────────────────────────────────────────────────────────
-
-async function PostDetail({
-  post,
-  lang,
-  variants,
-}: {
-  post: SanityPost
-  lang: string
-  variants: SlugEntry[]
-}) {
-  const variantMap = Object.fromEntries(variants.map((v) => [v.language, v.slug]))
-
-  // Back label in the right language
-  const backLabel = lang === 'hi' ? '← वापस' : lang === 'kn' ? '← ಹಿಂದೆ' : '← Back'
-
-  return (
-    <main className="min-h-screen bg-[#0d0e14] text-white px-6 py-12 max-w-3xl mx-auto">
-      {/* Nav row */}
-      <nav className="flex items-center justify-between mb-8 text-sm">
-        <Link
-          href={lang === 'en' ? '/' : `/${lang}`}
-          className="text-white/30 hover:text-white/70 transition-colors"
-        >
-          {backLabel}
-        </Link>
-        {/* Language switcher — links to other language variants of this post */}
-        <div className="flex items-center gap-2">
-          {SUPPORTED_LANGUAGES.map((l) => {
-            const targetSlug = variantMap[l]
-            if (!targetSlug) return null
-            const url = l === 'en' ? `/${targetSlug}` : `/${l}/${targetSlug}`
-            const isActive = l === lang
-            return (
-              <Link
-                key={l}
-                href={url}
-                className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${
-                  isActive
-                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                    : 'text-white/30 hover:text-white/60'
-                }`}
-              >
-                {LANG_LABELS[l as SupportedLang]?.toUpperCase() ?? l.toUpperCase()}
-              </Link>
-            )
-          })}
-        </div>
-      </nav>
-
-      {/* Cover image */}
-      {post.coverImage && (post.coverImage as { url?: string }).url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={(post.coverImage as { url?: string }).url!}
-          alt={post.title}
-          className="w-full h-56 object-cover rounded-2xl mb-8"
-          loading="lazy"
-          decoding="async"
-        />
-      )}
-
-      {/* Tags */}
-      {post.tags && post.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {post.tags.map((tag) => (
-            <span
-              key={tag}
-              className="px-2 py-0.5 text-[10px] font-medium text-white/40 bg-white/5 rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Heading */}
-      <h1 className="text-3xl font-bold tracking-tight mb-3">{post.title}</h1>
-
-      {/* Meta */}
-      <div className="flex items-center gap-3 mb-8 text-white/30 text-sm">
-        {post.authorName && <span>{post.authorName}</span>}
-        {post.authorName && post.publishedAt && <span>·</span>}
-        {post.publishedAt && (
-          <time dateTime={post.publishedAt} className="font-mono text-xs">
-            {format(new Date(post.publishedAt), 'MMMM dd, yyyy')}
-          </time>
-        )}
-      </div>
-
-      {/* Excerpt */}
-      {post.excerpt && (
-        <p className="text-white/50 text-lg leading-relaxed mb-8 border-l-2 border-indigo-500/40 pl-4 italic">
-          {post.excerpt}
-        </p>
-      )}
-
-      {/* Body */}
-      {post.body && (
-        <article className="prose prose-invert prose-indigo max-w-none">
-          <PortableText value={post.body as Parameters<typeof PortableText>[0]['value']} />
-        </article>
-      )}
-    </main>
-  )
-}

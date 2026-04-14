@@ -283,9 +283,12 @@ export function ProfileForm({ config }: ProfileFormProps) {
                       )}
                     />
                   </FormControl>
-                  <FormMessage className="text-red-400 text-xs flex items-center gap-1">
-                    <AlertTriangle size={11} />
-                  </FormMessage>
+                  {form.formState.errors.website && (
+                    <p className="text-red-400 text-xs flex items-center gap-1 mt-1">
+                      <AlertTriangle size={11} />
+                      <span>{form.formState.errors.website.message}</span>
+                    </p>
+                  )}
                 </FormItem>
               )}
             />

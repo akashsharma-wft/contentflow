@@ -116,8 +116,7 @@ export default async function HomePage() {
   }
 
   // ── Auth layout (no chrome) ────────────────────────────────────────────────
-  // lg:flex lg:flex-wrap: authHeroSection (lg:w-[45%]) + authSection (flex-1)
-  // sit side-by-side on desktop; authLegalSection (w-full) wraps to a new row.
+  // lg:flex: authHeroSection (lg:w-[45%]) + authSection (right flex-1)
   if (access.isAuth) {
     return sections.length > 0 ? (
       <div className="min-h-screen bg-[#0d0e14] lg:flex lg:flex-wrap">

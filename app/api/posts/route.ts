@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     
     const body = await request.json()
-    const { title, excerpt, tags, featured, publishedAt, coverImageUrl } = body
+    const { title, excerpt, tags, featured, publishedAt, coverImageUrl, language } = body
 
     if (currentCount >= postLimit && publishedAt) {
       return NextResponse.json({
@@ -67,13 +67,20 @@ export async function POST(request: NextRequest) {
     }
 
     const postId = `post-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    const slug = postId
+    // Derive slug from title (same algorithm as CreatePostModal)
+    const slug = title.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      || postId
 
     const postDocument: Record<string, unknown> = {
       _type: 'post',
       _id: postId,
       title: title.trim(),
       slug: { _type: 'slug', current: slug },
+      language: language ?? 'en',
       excerpt: excerpt?.trim() ?? '',
       featured: featured ?? false,
       tags: (tags ?? []).filter(Boolean),
@@ -81,7 +88,6 @@ export async function POST(request: NextRequest) {
       authorId: user.id,
       authorName: profile?.display_name ?? user.email ?? 'Anonymous',
       authorEmail: user.email ?? '',
-      authorAvatar: profile?.avatar_url ?? null,
       body: [{
         _type: 'block',
         _key: `block-${Date.now()}`,
@@ -125,6 +131,35 @@ export async function POST(request: NextRequest) {
         }
       } catch {
         console.warn('Image upload failed, continuing without image')
+      }
+    }
+
+    const avatarUrl = profile?.avatar_url
+    if (avatarUrl) {
+      try {
+        const avatarResponse = await fetch(avatarUrl)
+        const avatarBuffer = await avatarResponse.arrayBuffer()
+        const avatarContentType = avatarResponse.headers.get('content-type') ?? 'image/png'
+
+        const uploadUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/assets/images/${SANITY_DATASET}`
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': avatarContentType,
+            Authorization: `Bearer ${SANITY_TOKEN}`,
+          },
+          body: avatarBuffer,
+        })
+
+        if (uploadResponse.ok) {
+          const avatarAsset = await uploadResponse.json()
+          postDocument.authorAvatar = {
+            _type: 'image',
+            asset: { _type: 'reference', _ref: avatarAsset.document._id },
+          }
+        }
+      } catch {
+        console.warn('Author avatar upload failed, continuing without avatar')
       }
     }
 

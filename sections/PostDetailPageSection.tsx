@@ -1,32 +1,41 @@
 // sections/PostDetailPageSection.tsx
-// Server component — renders a full post detail page with comments, related posts, etc.
+//
+// Marker section that signals a page should render post detail content.
+// Receives configuration from the `postDetail` content sub-object in the
+// section document (sectionType === 'postDetail').
+//
+// The actual post body is fetched by the route file (app/posts/[slug]/page.tsx
+// or app/[lang]/posts/[slug]/page.tsx) using the URL slug parameter. This
+// section acts as configuration — should the detail page show the author,
+// publish date, and tags?
+//
+// On pages that DON'T have a dedicated route (e.g. a page-builder page that
+// embeds a postDetail section), this renders a placeholder.
 
-import { Suspense } from 'react'
-import type { PostDetailPageSection as PostDetailPageSectionType } from '@/types/sanity'
+import type { SectionPostDetailContent } from '@/types/sanity'
 
 interface Props {
-  section: PostDetailPageSectionType
+  // New schema shape (sectionType === 'postDetail')
+  section?: SectionPostDetailContent
 }
 
-export async function PostDetailPageSection({ section }: Props) {
+export function PostDetailPageSection({ section }: Props) {
+  const showAuthor      = section?.showAuthor      ?? true
+  const showPublishedAt = section?.showPublishedAt ?? true
+  const showTags        = section?.showTags        ?? true
+
+  // This section is a marker — the route file (not yet created) will use these
+  // config values when rendering the full post detail. Expose them as data
+  // attributes so the presentation tool can surface them.
   return (
-    <div className="w-full">
-      <Suspense fallback={<div>Loading post detail...</div>}>
-        <div className="prose dark:prose-invert max-w-4xl mx-auto">
-          {/* Post detail content would be rendered here */}
-          {section?.heading && (
-            <h1 className="text-4xl font-bold mb-4">{section.heading}</h1>
-          )}
-          {section?.description && (
-            <p className="text-lg text-white/70 mb-8">{section.description}</p>
-          )}
-          
-          {/* TODO: Add comments and related posts sections */}
-          <div className="mt-12 pt-8 border-t border-white/10 text-white/50">
-            <p>Post detail content coming soon</p>
-          </div>
-        </div>
-      </Suspense>
+    <div
+      className="w-full"
+      data-section="postDetail"
+      data-show-author={String(showAuthor)}
+      data-show-published-at={String(showPublishedAt)}
+      data-show-tags={String(showTags)}
+    >
+      {/* Rendered by app/posts/[slug]/page.tsx or app/[lang]/posts/[slug]/page.tsx */}
     </div>
   )
 }

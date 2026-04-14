@@ -1,6 +1,3 @@
-// sanity/lib/translations.ts
-// Studio sidebar labels translated into all three supported languages.
-
 export type Language = 'en' | 'hi' | 'kn'
 
 export const translations = {

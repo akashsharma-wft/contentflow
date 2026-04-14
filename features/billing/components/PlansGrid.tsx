@@ -41,14 +41,17 @@ interface PlansGridProps {
 export function PlansGrid({
   currentTier, proPriceId, onUpgrade, onDowngrade, isLoading, isCancelling, config
 }: PlansGridProps) {
-  const { data: prices } = useQuery<StripePrice[]>({
+  const { data: prices, isLoading: pricesLoading } = useQuery<StripePrice[]>({
     queryKey: ['stripe-prices'],
     queryFn: async () => {
       const res = await fetch('/api/stripe/prices')
       if (!res.ok) throw new Error('Failed to fetch prices')
-      return res.json()
+      const json = await res.json()
+      // Route may return { error: '...' } instead of an array when Stripe is not configured
+      return Array.isArray(json) ? json : []
     },
     staleTime: 5 * 60 * 1000,
+    retry: 1,
   })
 
   const proPrice = prices?.find((p) => p.id === proPriceId)
@@ -134,8 +137,10 @@ export function PlansGrid({
                 <span className="text-white text-3xl font-bold">{formatPrice(proPrice)}</span>
                 <span className="text-white/30 text-sm">/{proPrice.interval}</span>
               </>
-            ) : (
+            ) : pricesLoading ? (
               <Loader2 size={20} className="animate-spin text-white/30" />
+            ) : (
+              <span className="text-white/30 text-sm">Contact us</span>
             )}
           </div>
           <ul className="space-y-2">
@@ -148,7 +153,7 @@ export function PlansGrid({
           </ul>
           <button
             onClick={currentTier !== 'pro' ? onUpgrade : undefined}
-            disabled={isLoading || !proPrice || currentTier === 'pro'}
+            disabled={isLoading || currentTier === 'pro'}
             className={cn(
               'w-full py-2.5 rounded-xl text-sm font-semibold transition-all',
               currentTier === 'pro'

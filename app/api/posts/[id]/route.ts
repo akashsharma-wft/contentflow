@@ -32,21 +32,52 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { title, excerpt, tags, featured, publishedAt } = body
+    const { title, excerpt, tags, featured, publishedAt, coverImageUrl, removeCoverImage } = body
 
     // Build set object with only provided fields — supports partial updates
     // This allows the featured toggle to send ONLY {featured: true/false}
     const setFields: Record<string, unknown> = {}
+    const unsetFields: string[] = []
 
-    if (title !== undefined) {
-      setFields.title = title
-    }
-    if (excerpt !== undefined)    setFields.excerpt  = excerpt
-    if (tags !== undefined)       setFields.tags     = tags
-    if (featured !== undefined)   setFields.featured = featured
+    if (title !== undefined)      setFields.title      = title
+    if (excerpt !== undefined)    setFields.excerpt    = excerpt
+    if (tags !== undefined)       setFields.tags       = tags
+    if (featured !== undefined)   setFields.featured   = featured
     if (publishedAt !== undefined) setFields.publishedAt = publishedAt
 
-    const mutations = [{ patch: { id, set: setFields } }]
+    // Handle cover image update
+    if (coverImageUrl) {
+      try {
+        const imageResponse = await fetch(coverImageUrl)
+        const imageBuffer = await imageResponse.arrayBuffer()
+        const contentType = imageResponse.headers.get('content-type') ?? 'image/jpeg'
+
+        const uploadUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/assets/images/${SANITY_DATASET}`
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': contentType, Authorization: `Bearer ${SANITY_TOKEN}` },
+          body: imageBuffer,
+        })
+
+        if (uploadResponse.ok) {
+          const imageAsset = await uploadResponse.json()
+          setFields.coverImage = {
+            _type: 'image',
+            asset: { _type: 'reference', _ref: imageAsset.document._id },
+          }
+        }
+      } catch {
+        console.warn('Cover image upload failed, skipping image update')
+      }
+    } else if (removeCoverImage) {
+      unsetFields.push('coverImage')
+    }
+
+    const patch: Record<string, unknown> = { id }
+    if (Object.keys(setFields).length > 0)  patch.set   = setFields
+    if (unsetFields.length > 0)             patch.unset = unsetFields
+
+    const mutations = [{ patch }]
 
     const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/v2024-01-01/data/mutate/${SANITY_DATASET}`
     const response = await fetch(url, {

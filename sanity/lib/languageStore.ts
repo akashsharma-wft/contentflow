@@ -1,9 +1,3 @@
-// sanity/lib/languageStore.ts
-// Module-level language store.
-// - Persisted in localStorage so it survives Studio reloads.
-// - Synced from StudioNavbar on every language switch.
-// - Read by structure.ts and schema initialValue functions.
-
 import type { Language } from './translations'
 
 const STORAGE_KEY = 'cf-studio-lang'

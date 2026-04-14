@@ -7,38 +7,37 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/hooks/useUser'
-import { APP_NAV_ITEMS, ICON_MAP, filterNavItems, localizeHref } from '@/lib/navigation'
-import type { SidebarNavLink } from '@/types/sanity'
-
-const FALLBACK_NAV: SidebarNavLink[] = APP_NAV_ITEMS
+import { ICON_MAP, filterByVisibility, getNavItemLabel, getNavRole, localizeHref } from '@/lib/navigation'
+import type { SiteNavItem } from '@/types/sanity'
 
 interface SidebarNavProps {
   collapsed: boolean
-  navItems?: SidebarNavLink[]
+  navItems?: SiteNavItem[]
   lang?: string
 }
 
-/** Check if a path is active, accounting for language prefix */
 function isPathActive(pathname: string, localizedHref: string): boolean {
   return pathname === localizedHref || pathname.startsWith(`${localizedHref}/`)
 }
 
-export function SidebarNav({ collapsed, navItems, lang = 'en' }: SidebarNavProps) {
+export function SidebarNav({ collapsed, navItems = [], lang = 'en' }: SidebarNavProps) {
   const pathname = usePathname()
-  const { profile } = useUser()
+  const { user, profile } = useUser()
 
-  const items = filterNavItems(navItems ?? FALLBACK_NAV, profile?.role)
+  const role  = getNavRole(user?.id, profile?.role)
+  const items = filterByVisibility(navItems, role)
 
   return (
     <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-      {items.map(({ label, href, icon }) => {
-        const Icon = (icon && ICON_MAP[icon]) ? ICON_MAP[icon] : ICON_MAP.FileText
-        const localizedHref = localizeHref(href, lang)
-        const isActive = isPathActive(pathname, localizedHref)
+      {items.map((item) => {
+        const Icon          = (item.icon && ICON_MAP[item.icon]) ? ICON_MAP[item.icon] : ICON_MAP.FileText
+        const localizedHref = localizeHref(item.href, lang)
+        const isActive      = isPathActive(pathname, localizedHref)
+        const label         = getNavItemLabel(item.label, lang)
 
         return (
           <Link
-            key={href}
+            key={item._key || item.href}
             href={localizedHref}
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer group',

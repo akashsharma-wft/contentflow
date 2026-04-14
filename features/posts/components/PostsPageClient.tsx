@@ -211,7 +211,8 @@ export function PostsPageClient({ config }: PostsPageClientProps) {
       ) : (
         <PostsTable
           posts={filteredPosts}
-          userId={user?.id ?? ''}
+          queryKey={['posts', 'all', 'en']}
+          lang="en"
           colTitle={config.colTitle}
           colStatus={config.colStatus}
           colTags={config.colTags}

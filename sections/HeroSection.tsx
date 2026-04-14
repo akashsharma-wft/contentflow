@@ -13,7 +13,6 @@ export function HeroSection({ section }: Props) {
     badge,
     primaryCta,
     secondaryCta,
-    theme = 'dark',
     layout = 'centered',
     communityText,
   } = section
@@ -22,40 +21,20 @@ export function HeroSection({ section }: Props) {
     return <SplitHero section={section} />
   }
 
-  // ── Centered layout (original) ─────────────────────────────────────────────
-  const bgUrl = (section.backgroundImage as { url?: string })?.url
-
+  // ── Centered layout — always dark ──────────────────────────────────────────
   return (
-    <section
-      className={cn(
-        'relative w-full min-h-[480px] flex items-center justify-center px-6 py-20 overflow-hidden',
-        theme === 'dark' && 'bg-[#0d0e14]',
-        theme === 'light' && 'bg-white',
-        theme === 'gradient' && 'bg-gradient-to-br from-indigo-900 via-[#0d0e14] to-[#0d0e14]'
-      )}
-    >
-      {bgUrl && (
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-20"
-          style={{ backgroundImage: `url(${bgUrl})` }}
-        />
-      )}
+    <section className="relative w-full min-h-120 flex items-center justify-center px-6 py-20 overflow-hidden bg-[#0d0e14]">
       <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
         {badge && (
           <span className="inline-block px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-indigo-300 bg-indigo-500/15 border border-indigo-500/25 rounded-full">
             {badge}
           </span>
         )}
-        <h1
-          className={cn(
-            'text-4xl md:text-6xl font-bold tracking-tight leading-tight',
-            theme === 'light' ? 'text-gray-900' : 'text-white'
-          )}
-        >
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight text-white">
           {heading}
         </h1>
         {subheading && (
-          <p className={cn('text-lg md:text-xl max-w-2xl mx-auto leading-relaxed', theme === 'light' ? 'text-gray-600' : 'text-white/55')}>
+          <p className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed text-white/55">
             {subheading}
           </p>
         )}
@@ -69,10 +48,7 @@ export function HeroSection({ section }: Props) {
             {secondaryCta?.label && secondaryCta?.href && (
               <Link
                 href={secondaryCta.href}
-                className={cn(
-                  'px-6 py-3 font-semibold rounded-xl transition-colors text-sm border',
-                  theme === 'light' ? 'border-gray-200 text-gray-700 hover:bg-gray-50' : 'border-white/15 text-white/70 hover:border-white/30 hover:text-white'
-                )}
+                className="px-6 py-3 font-semibold rounded-xl transition-colors text-sm border border-white/15 text-white/70 hover:border-white/30 hover:text-white"
               >
                 {secondaryCta.label}
               </Link>

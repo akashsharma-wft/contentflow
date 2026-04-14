@@ -6,7 +6,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 const AUTH_ROUTES = ['/login', '/signup']
 
 // Routes that require a logged-in session (fast-path check before Sanity loads)
-const PROTECTED_PATHS = ['/posts', '/analytics', '/settings', '/billing', '/admin']
+// /studio is included — unauthenticated users get redirected to login;
+// the admin/non-admin fork is handled in the studio page component itself.
+const PROTECTED_PATHS = ['/posts', '/analytics', '/settings', '/billing', '/admin', '/studio']
 
 // Routes that require admin role
 const ADMIN_PATHS = ['/admin']

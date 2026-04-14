@@ -2,12 +2,13 @@ import Link from 'next/link'
 
 interface SidebarLogoProps {
   lang?: string
+  brandName?: string
+  brandSubtitle?: string
 }
 
-export function SidebarLogo({ lang = 'en' }: SidebarLogoProps) {
-  // Build language-aware href
+export function SidebarLogo({ lang = 'en', brandName = 'ContentFlow', brandSubtitle = 'Engineering CMS' }: SidebarLogoProps) {
   const href = lang === 'en' ? '/' : `/${lang}`
-  
+
   return (
     <Link
       href={href}
@@ -23,10 +24,10 @@ export function SidebarLogo({ lang = 'en' }: SidebarLogoProps) {
       </div>
       <div className="flex flex-col min-w-0">
         <span className="text-white text-xs font-semibold leading-tight truncate">
-          ContentFlow
+          {brandName}
         </span>
         <span className="text-white/30 text-[9px] uppercase tracking-widest">
-          Engineering CMS
+          {brandSubtitle}
         </span>
       </div>
     </Link>

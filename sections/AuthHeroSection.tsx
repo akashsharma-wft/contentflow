@@ -7,9 +7,18 @@
 // With the auth layout wrapper being `min-h-screen bg-[#0d0e14] lg:flex lg:flex-wrap`,
 // this section occupies the left 45 % on desktop and is invisible on mobile.
 // AuthFormSection (right panel) takes flex-1 alongside it.
-// AuthLegalSection wraps to a full-width row below both panels.
 
+import {
+  Zap, LayoutGrid, GitBranch, Globe, Eye,
+  type LucideIcon,
+} from 'lucide-react'
 import type { AuthHeroSection as AuthHeroSectionType } from '@/types/sanity'
+
+// Map Sanity icon field values → Lucide components.
+// Only icons actually used by auth hero features need to be here.
+const ICON_MAP: Record<string, LucideIcon> = {
+  Zap, LayoutGrid, GitBranch, Globe, Eye,
+}
 
 interface Props {
   section: AuthHeroSectionType
@@ -55,16 +64,20 @@ export function AuthHeroSection({ section }: Props) {
 
         {features.length > 0 && (
           <ul className="space-y-4">
-            {features.map((f, i) => (
-              <li key={f._key ?? i} className="flex items-center gap-4">
-                <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                  <span className="text-white/50 text-xs font-mono">
-                    {f.icon ?? '✦'}
-                  </span>
-                </div>
-                <span className="text-white/55 text-sm font-medium">{f.text}</span>
-              </li>
-            ))}
+            {features.map((f, i) => {
+              const IconComp = f.icon ? ICON_MAP[f.icon] : null
+              return (
+                <li key={f._key ?? i} className="flex items-center gap-4">
+                  <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    {IconComp
+                      ? <IconComp size={16} className="text-indigo-400" />
+                      : <span className="text-white/40 text-sm">✦</span>
+                    }
+                  </div>
+                  <span className="text-white/55 text-sm font-medium">{f.text}</span>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>

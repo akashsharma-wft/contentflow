@@ -1,7 +1,11 @@
 // features/dashboard/components/DashboardLayout.tsx
-// Server component — fetches siteConfig to get CMS-driven nav items,
-// then passes them (with lang) to Sidebar + MobileBottomNav.
-// The lang prop ensures sidebar labels come in the right language.
+// Server component — fetches siteConfig and passes layout content to the
+// built-in Sidebar, MobileTopBar, and MobileBottomNav components.
+//
+// Data flow:
+//   Sanity siteConfig.sidebarConfig.navItems  → Sidebar + MobileBottomNav
+//   Falls back to siteConfig.sidebarNav (legacy) → same components
+//   No Sanity data → hardcoded fallback inside SidebarNav / MobileBottomNav
 import { sanityClient } from '@/lib/sanity/client'
 import { SITE_CONFIG_QUERY } from '@/lib/sanity/queries'
 import type { SanitySiteConfig } from '@/types/sanity'
@@ -15,17 +19,20 @@ interface DashboardLayoutProps {
 }
 
 export async function DashboardLayout({ children, lang = 'en' }: DashboardLayoutProps) {
-  // Fetch siteConfig to get sidebar nav items from CMS
   const siteConfig = await sanityClient.fetch<SanitySiteConfig | null>(SITE_CONFIG_QUERY)
-  const navItems = siteConfig?.sidebarNav ?? []
+
+  const sidebarConfig   = siteConfig?.sidebarConfig ?? null
+  const navItems        = sidebarConfig?.navItems ?? []
+  const mobileNavConfig = siteConfig?.mobileNavConfig ?? null
+  const mobileNavItems  = mobileNavConfig?.items ?? navItems
 
   return (
     <div className="flex h-screen bg-[#0d0e14] overflow-hidden">
       {/* Sidebar — desktop only */}
-      <Sidebar navItems={navItems} lang={lang} />
+      <Sidebar navItems={navItems} lang={lang} sidebarConfig={sidebarConfig} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile top bar — shows logo + avatar, no nav links */}
+        {/* Mobile top bar — logo + avatar */}
         <MobileTopBar />
 
         <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
@@ -34,8 +41,8 @@ export async function DashboardLayout({ children, lang = 'en' }: DashboardLayout
           </div>
         </main>
 
-        {/* Mobile bottom nav — tabs for quick navigation */}
-        <MobileBottomNav navItems={navItems} lang={lang} />
+        {/* Mobile bottom nav */}
+        <MobileBottomNav navItems={mobileNavItems} lang={lang} showLabels={mobileNavConfig?.showLabels} />
       </div>
     </div>
   )

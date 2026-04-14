@@ -7,6 +7,8 @@ import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
+  if (!stripe) return NextResponse.json({ error: 'Stripe is not configured' }, { status: 503 })
+
   try {
     // Authenticate the user server-side first
     const supabase = await createClient()

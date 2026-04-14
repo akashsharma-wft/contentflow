@@ -3,6 +3,10 @@ import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
+  if (!stripe) {
+    return NextResponse.json({ error: 'Stripe is not configured' }, { status: 503 })
+  }
+
   const rawBody = await request.text() // Must be raw text, NOT .json()
   const signature = request.headers.get('stripe-signature')
 
@@ -10,7 +14,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No signature' }, { status: 400 })
   }
 
-  let event: ReturnType<typeof stripe.webhooks.constructEvent>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let event: any
 
   try {
     // Verify the webhook came from Stripe — rejects tampered payloads

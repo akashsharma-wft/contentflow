@@ -1,36 +1,19 @@
-// sanity/structure.ts
-// ContentFlow Studio sidebar structure.
-//
-// Language awareness:
-//   All document lists filter by getStudioLanguage() so editors see only
-//   documents in the currently selected language. Switching language via
-//   StudioNavbar dropdown reloads the Studio so this re-evaluates.
-//
-// Architecture:
-//   Sections are standalone documents (type: 'section') grouped by page.
-//   Pages store references to section documents.
-//
-// Site Config:
-//   Single siteConfig document (stable ID: 'site-config').
-//   No per-language duplication.
-//
-// Preview:
-//   Page documents get an Editor | Preview tab pair.
-//   PreviewIframe derives the URL from slug + language using DocumentViewProps.
-
 import type { StructureBuilder, DefaultDocumentNodeContext } from 'sanity/structure'
 import {
   DocumentIcon,
   ComposeIcon,
   StackCompactIcon,
+  ComponentIcon,
   CogIcon,
   ImageIcon,
   DocumentTextIcon,
   LockIcon,
-  ActivityIcon,
   ControlsIcon,
   CreditCardIcon,
   UsersIcon,
+  BulbOutlineIcon,
+  UlistIcon,
+  ActivityIcon,
 } from '@sanity/icons'
 import { getStudioLanguage } from './lib/languageStore'
 import { t }                  from './lib/translations'
@@ -54,20 +37,29 @@ export function defaultDocumentNode(
   return S.document().views([S.view.form()])
 }
 
-// ── Language label map ────────────────────────────────────────────────────────
-
-const LANG_LABELS: Record<string, string> = {
-  en: 'English',
-  hi: 'Hindi — हिंदी',
-  kn: 'Kannada — ಕನ್ನಡ',
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/**
- * Section group: one list item per page that shows section docs
- * for the active language. Label includes the language tag.
- */
+/** Single filtered list item for a component type group. */
+function componentTypeItem(
+  S: StructureBuilder,
+  lang: string,
+  componentType: string,
+  label: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: any,
+) {
+  return S.listItem()
+    .title(label)
+    .id(`components-${componentType}-${lang}`)
+    .icon(icon)
+    .child(
+      S.documentList()
+        .title(`${label}  ·  ${lang.toUpperCase()}`)
+        .filter(`_type == "component" && componentType == "${componentType}" && language == "${lang}"`)
+        .defaultOrdering([{ field: 'name', direction: 'asc' }]),
+    )
+}
+
 function pageSectionItem(
   S: StructureBuilder,
   lang: string,
@@ -135,13 +127,36 @@ export function structure(S: StructureBuilder) {
           S.list()
             .title(`${t('pageSections', lang)}  ·  ${lang.toUpperCase()}`)
             .items([
-              pageSectionItem(S, lang, 'home',     'Home',     ImageIcon),
-              pageSectionItem(S, lang, 'login',    'Login',    LockIcon),
-              pageSectionItem(S, lang, 'signup',   'Sign Up',  LockIcon),
-              pageSectionItem(S, lang, 'posts',    'Posts',    DocumentTextIcon),
-              pageSectionItem(S, lang, 'settings', 'Settings', ControlsIcon),
-              pageSectionItem(S, lang, 'billing',  'Billing',  CreditCardIcon),
-              pageSectionItem(S, lang, 'admin',    'Admin',    UsersIcon),
+              pageSectionItem(S, lang, 'home',       'Home',        ImageIcon),
+              pageSectionItem(S, lang, 'login',      'Login',       LockIcon),
+              pageSectionItem(S, lang, 'signup',     'Sign Up',     LockIcon),
+              pageSectionItem(S, lang, 'posts',      'Posts',       DocumentTextIcon),
+              pageSectionItem(S, lang, 'postDetail', 'Post Detail', DocumentTextIcon),
+              pageSectionItem(S, lang, 'settings',   'Settings',    ControlsIcon),
+              pageSectionItem(S, lang, 'billing',    'Billing',     CreditCardIcon),
+              pageSectionItem(S, lang, 'analytics',  'Analytics',   ActivityIcon),
+              pageSectionItem(S, lang, 'admin',      'Admin',       UsersIcon),
+            ]),
+        ),
+
+      S.divider(),
+
+      // ── Components — content blocks only (layout chrome is owned by Site Config) ──
+      S.listItem()
+        .title('Components')
+        .id(`components-${lang}`)
+        .icon(ComponentIcon)
+        .child(
+          S.list()
+            .title(`Components  ·  ${lang.toUpperCase()}`)
+            .items([
+              componentTypeItem(S, lang, 'form',         'Form',          ControlsIcon),
+              componentTypeItem(S, lang, 'grid',         'Grid',          BulbOutlineIcon),
+              componentTypeItem(S, lang, 'cards',        'Cards',         BulbOutlineIcon),
+              componentTypeItem(S, lang, 'pricingTable', 'Pricing Table', CreditCardIcon),
+              componentTypeItem(S, lang, 'dataTable',    'Data Table',    UlistIcon),
+              componentTypeItem(S, lang, 'list',         'List',          UlistIcon),
+              componentTypeItem(S, lang, 'flex',         'Flex Layout',   BulbOutlineIcon),
             ]),
         ),
 

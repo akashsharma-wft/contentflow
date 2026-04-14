@@ -3,6 +3,12 @@ import { stripe } from '@/lib/stripe'
 import Stripe from 'stripe'
 
 export async function GET() {
+  // When Stripe is not configured, return an empty array so the UI can fall
+  // back to CMS-provided plan names/taglines instead of loading forever.
+  if (!stripe) {
+    return NextResponse.json([])
+  }
+
   try {
     const prices = await stripe.prices.list({
       expand: ['data.product'],

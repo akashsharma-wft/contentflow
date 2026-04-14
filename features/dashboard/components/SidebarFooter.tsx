@@ -3,13 +3,27 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { BookOpen, LifeBuoy, LogOut, Plus } from 'lucide-react'
+import { LogOut, Plus, type LucideIcon } from 'lucide-react'
+import { ICON_MAP } from '@/lib/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/hooks/useUser'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
+import type { SiteCtaButton, SiteSidebarFooterLink } from '@/types/sanity'
 
-export function SidebarFooter() {
+interface SidebarFooterProps {
+  ctaButton?: SiteCtaButton
+  footerLinks?: SiteSidebarFooterLink[]
+}
+
+const DEFAULT_FOOTER_LINKS: SiteSidebarFooterLink[] = [
+  { _key: 'fl1', label: 'Documentation', href: '/studio', icon: 'BookOpen', external: true },
+  { _key: 'fl2', label: 'Support',       href: '/settings', icon: 'LifeBuoy', external: false },
+]
+
+const DEFAULT_CTA: SiteCtaButton = { label: 'New Entry', href: '/posts' }
+
+export function SidebarFooter({ ctaButton = DEFAULT_CTA, footerLinks = DEFAULT_FOOTER_LINKS }: SidebarFooterProps) {
   const router = useRouter()
   const { profile } = useUser()
 
@@ -50,36 +64,44 @@ export function SidebarFooter() {
         </div>
       </div>
 
-      {/* New Entry — goes to posts page where user can open Sanity Studio */}
-      <Link
-        href="/posts"
-        className="flex items-center justify-center gap-2 w-full py-2 mb-1 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-      >
-        <Plus size={12} />
-        New Entry
-      </Link>
+      {/* CTA button — config-driven */}
+      {ctaButton?.label && ctaButton?.href && (
+        <Link
+          href={ctaButton.href}
+          className="flex items-center justify-center gap-2 w-full py-2 mb-1 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+        >
+          <Plus size={12} />
+          {ctaButton.label}
+        </Link>
+      )}
 
-      {/* Sanity Studio — opens in new tab */}
-      <a
-        href={`${process.env.NEXT_PUBLIC_SANITY_STUDIO_URL}/studio`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-white/30 hover:text-white/60 hover:bg-white/5 transition-all cursor-pointer"
-      >
-        <BookOpen size={13} className="shrink-0" />
-        Documentation
-      </a>
+      {/* Footer utility links — config-driven */}
+      {footerLinks.map((link) => {
+        const Icon: LucideIcon = (link.icon && ICON_MAP[link.icon]) ? ICON_MAP[link.icon] : ICON_MAP.BookOpen
+        const sharedClass = "flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-white/30 hover:text-white/60 hover:bg-white/5 transition-all cursor-pointer"
+        if (link.external) {
+          return (
+            <a
+              key={link._key}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={sharedClass}
+            >
+              <Icon size={13} className="shrink-0" />
+              {link.label}
+            </a>
+          )
+        }
+        return (
+          <Link key={link._key} href={link.href} className={sharedClass}>
+            <Icon size={13} className="shrink-0" />
+            {link.label}
+          </Link>
+        )
+      })}
 
-      {/* Support — links to a real page */}
-      <Link
-        href="/settings"
-        className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-white/30 hover:text-white/60 hover:bg-white/5 transition-all cursor-pointer"
-      >
-        <LifeBuoy size={13} className="shrink-0" />
-        Support
-      </Link>
-
-      {/* Sign out — real Supabase signOut call */}
+      {/* Sign out — always present, real Supabase signOut call */}
       <button
         onClick={handleSignOut}
         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-white/30 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer text-left"

@@ -90,16 +90,28 @@ export const pageType = defineType({
       validation: R => R.required(),
     }),
 
-    // ── Sections ─────────────────────────────────────────────────────────
-    // Each entry is a reference to a `section` document.
-    // Use the Studio sidebar to create/manage sections grouped by page.
+    // ── Sections & Components ─────────────────────────────────────────────
+    // A single polymorphic reference type that can point to either a
+    // `section` doc or a `component` doc.  Using one array member avoids
+    // the Sanity "duplicate type 'reference'" schema error while keeping
+    // the full pick-list of both document types in Studio.
+    // GROQ: sections[]-> returns the full doc; _type discriminates 'section'
+    // vs 'component' on the frontend.
     defineField({
       name: 'sections',
-      title: 'Sections',
-      description: 'Add section documents here (create them first via the Sections menu).',
+      title: 'Sections & Components',
+      description: 'Add section or component documents here. Create them first via Sections / Components menus.',
       type: 'array',
       group: 'content',
-      of: [{ type: 'reference', to: [{ type: 'section' }] }],
+      of: [
+        {
+          type: 'reference',
+          to: [
+            { type: 'section'   },
+            { type: 'component' },
+          ],
+        },
+      ],
     }),
 
     // ── SEO ──────────────────────────────────────────────────────────────

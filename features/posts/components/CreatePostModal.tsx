@@ -13,6 +13,7 @@ import { usePostHog } from 'posthog-js/react'
 interface CreatePostModalProps {
   open: boolean
   onClose: () => void
+  lang?: string
 }
 
 interface TagInputProps {
@@ -70,7 +71,7 @@ function TagInput({ tags, onChange }: TagInputProps) {
   )
 }
 
-export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
+export function CreatePostModal({ open, onClose, lang = 'en' }: CreatePostModalProps) {
   const queryClient = useQueryClient()
   const coverImageRef = useRef<HTMLInputElement>(null)
   const posthog = usePostHog()
@@ -160,6 +161,7 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
           featured,
           publishedAt: publishNow ? new Date().toISOString() : null,
           coverImageUrl,
+          language: lang,
         }),
       })
 
@@ -179,10 +181,8 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
         throw new Error(data.error ?? 'Failed to create post')
       }
 
-      // Invalidate posts cache so list refetches
+      // ['posts'] prefix hits both ['posts','all',lang] and ['posts','stats',lang].
       queryClient.invalidateQueries({ queryKey: ['posts'] })
-      queryClient.invalidateQueries({ queryKey: ['posts-all'] })
-      queryClient.invalidateQueries({ queryKey: ['my-post-stats'] })
       toast.success('Post created successfully!')
       posthog?.capture('post_created', {
       title: title.trim(),
@@ -255,9 +255,9 @@ export function CreatePostModal({ open, onClose }: CreatePostModalProps) {
                   Slug
                 </Label>
                 <div className="flex items-center gap-2 px-3 py-2.5 bg-[#0d0e14] border border-white/5 rounded-xl">
-                  <span className="text-white/20 text-xs font-mono shrink-0">Auto-generated</span>
-                  <span className="text-white/30 text-xs font-mono truncate">
-                    Based on post ID
+                  <span className="text-white/20 text-xs font-mono shrink-0">/{' '}</span>
+                  <span className="text-white/40 text-xs font-mono truncate">
+                    {slug || <span className="text-white/20 italic">auto-generated from title</span>}
                   </span>
                 </div>
               </div>

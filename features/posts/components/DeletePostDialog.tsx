@@ -17,6 +17,10 @@ interface DeletePostDialogProps {
   onOpenChange: (open: boolean) => void
   postTitle: string
   onConfirm: () => Promise<void>
+  dialogTitle?: string
+  dialogBody?: string
+  confirmLabel?: string
+  cancelLabel?: string
 }
 
 export function DeletePostDialog({
@@ -24,6 +28,10 @@ export function DeletePostDialog({
   onOpenChange,
   postTitle,
   onConfirm,
+  dialogTitle    = 'Delete Post',
+  dialogBody     = 'Are you sure you want to delete "{title}"? This will permanently remove it from Sanity. This cannot be undone.',
+  confirmLabel   = 'Delete Post',
+  cancelLabel    = 'Cancel',
 }: DeletePostDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -37,6 +45,8 @@ export function DeletePostDialog({
     }
   }
 
+  const bodyText = dialogBody.replace('{title}', postTitle)
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="bg-[#1a1d27] border border-white/10 max-w-md">
@@ -46,13 +56,11 @@ export function DeletePostDialog({
               <AlertTriangle size={15} className="text-red-400" />
             </div>
             <AlertDialogTitle className="text-white text-base font-semibold">
-              Delete Post
+              {dialogTitle}
             </AlertDialogTitle>
           </div>
           <AlertDialogDescription className="text-white/45 text-sm leading-relaxed mt-2">
-            Are you sure you want to delete{' '}
-            <span className="text-white/70 font-medium">&ldquo;{postTitle}&rdquo;</span>?
-            This will permanently remove it from Sanity. This cannot be undone.
+            {bodyText}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -62,7 +70,7 @@ export function DeletePostDialog({
             disabled={isDeleting}
             className="bg-transparent border-white/10 text-white/50 hover:text-white hover:bg-white/5 cursor-pointer"
           >
-            Cancel
+            {cancelLabel}
           </AlertDialogCancel>
           <button
             onClick={handleConfirm}
@@ -70,7 +78,7 @@ export function DeletePostDialog({
             className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 size={13} />
-            {isDeleting ? 'Deleting...' : 'Delete Post'}
+            {isDeleting ? 'Deleting...' : confirmLabel}
           </button>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,28 +1,26 @@
 // components/Navbar.tsx
 //
 // Public navbar — appears on layout==='home' pages only.
-// Nav links are driven by Sanity: the server fetches NAV_PAGES_QUERY and passes
-// the result as `navPages`. The client then filters them by the user's access
-// level so protected links are hidden from unauthenticated visitors.
 //
-// Access rules:
-//   guest (unauthenticated) → pages with access 'guest'
-//   user  (authenticated)   → pages with access 'guest' | 'user'
-//   admin                   → all pages
+// Auth-aware right side:
+//   isLoading  → brand + language switcher (no flash of wrong UI)
+//   guest      → Login (text) + Sign Up (CTA button from Sanity config)
+//   logged-in  → app nav links (Posts/Settings/Billing, + Analytics/Admin if admin)
+//               + profile icon → /settings  + logout button
 //
-// Layout rules:
-//   layout === 'home'      → show Navbar + Footer  ← this component is rendered
-//   layout === 'dashboard' → sidebar (not this Navbar)
-//   layout === 'auth'      → no Navbar
+// Route protection is handled by middleware (proxy.ts). This component only
+// toggles _visibility_ — actual access enforcement lives in the server.
 'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { LanguageSwitcher } from './LanguageSwitcher'
-import { localizeHref } from '@/lib/navigation'
+import { localizeHref, filterByVisibility, getNavItemLabel, getNavRole } from '@/lib/navigation'
 import { useUser } from '@/hooks/useUser'
+import { createClient } from '@/lib/supabase/client'
 import type { SanitySiteConfig, NavPage } from '@/types/sanity'
+// NavPage kept for prop backward compat — not used in center nav
 
 const LANG_CODES = ['en', 'hi', 'kn'] as const
 type LangCode = (typeof LANG_CODES)[number]
@@ -37,27 +35,18 @@ function parseCurrentLang(pathname: string): LangCode {
   return 'en'
 }
 
-/** Filter nav pages based on the user's role. */
-function filterByAccess(pages: NavPage[], role: string | null | undefined): NavPage[] {
-  if (!pages.length) return []
-  return pages.filter((page) => {
-    if (page.access === 'admin') return role === 'admin'
-    if (page.access === 'user')  return role === 'admin' || (role != null && role !== '')
-    return true // 'guest' — visible to everyone
-  })
-}
 
 interface Props {
   siteConfig: SanitySiteConfig | null
   navPages?:  NavPage[]
-  /** Optional — accepted for compat; lang is derived from pathname internally. */
   lang?: string
 }
 
-export function Navbar({ siteConfig, navPages = [] }: Props) {
-  const pathname = usePathname()
+export function Navbar({ siteConfig }: Props) {
+  const pathname  = usePathname()
+  const router    = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { profile } = useUser()
+  const { user, profile, isLoading } = useUser()
 
   // Don't render on studio / login / signup routes
   if (SUPPRESS_ROUTES.some((route) => pathname.startsWith(route))) return null
@@ -67,11 +56,31 @@ export function Navbar({ siteConfig, navPages = [] }: Props) {
     pathname === '/' || (LANG_CODES as readonly string[]).includes(pathname.slice(1))
   if (!isHomePage) return null
 
-  const currentLang  = parseCurrentLang(pathname)
-  const siteName     = siteConfig?.siteName ?? 'ContentFlow'
-  const visiblePages = filterByAccess(navPages, profile?.role)
+  const currentLang          = parseCurrentLang(pathname)
+  const cfg                  = siteConfig?.navbarConfig
+  const brandName            = cfg?.brandName ?? siteConfig?.siteName ?? 'ContentFlow'
+  const ctaButton            = cfg?.ctaButton
+  const showLanguageSwitcher = cfg?.showLanguageSwitcher ?? true
+
+  // Nav items from siteConfig, filtered by the visitor's current role.
+  // Role resolves immediately from user object — no need to wait for profile for
+  // basic user/guest distinction; admin items appear once profile hydrates.
+  const role       = getNavRole(user?.id, profile?.role)
+  const navItems   = filterByVisibility(cfg?.items ?? [], role)
+
+  // isAuthenticated flips as soon as user is known — does NOT wait for profile.
+  const isAuthenticated = user !== null
+  const isGuest         = !isLoading && user === null
 
   const closeMobile = () => setMobileOpen(false)
+
+  async function handleSignOut() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/')
+    router.refresh()
+    closeMobile()
+  }
 
   return (
     <>
@@ -101,57 +110,99 @@ export function Navbar({ siteConfig, navPages = [] }: Props) {
                   <path d="M3 9h9m0 0-3-3m3 3-3 3M12 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <span className="text-white font-semibold text-sm tracking-tight">{siteName}</span>
+              <span className="text-white font-semibold text-sm tracking-tight">{brandName}</span>
             </Link>
           </div>
 
-          {/* Center: dynamic nav links from Sanity — desktop only */}
-          {visiblePages.length > 0 && (
+          {/* Center: siteConfig nav items filtered by role — desktop only */}
+          {navItems.length > 0 && (
             <nav className="hidden md:flex items-center gap-1">
-              {visiblePages.map((page) => {
-                const href     = localizeHref(`/${page.slug}`, currentLang)
+              {navItems.map((item) => {
+                const href     = localizeHref(item.href, currentLang)
                 const isActive = pathname === href || (href !== '/' && pathname.startsWith(href))
+                const label    = getNavItemLabel(item.label, currentLang)
                 return (
                   <Link
-                    key={page._id}
+                    key={item._key}
                     href={href}
                     className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                      isActive
-                        ? 'text-white bg-white/8'
-                        : 'text-white/50 hover:text-white hover:bg-white/5'
+                      isActive ? 'text-white bg-white/8' : 'text-white/50 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    {page.title}
+                    {label}
                   </Link>
                 )
               })}
             </nav>
           )}
 
-          {/* Right: language switcher + sign in */}
+          {/* Right: language switcher + auth-state-aware actions */}
           <div className="flex items-center gap-2">
-            <button
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
-              aria-label="Search"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" strokeLinecap="round" />
-              </svg>
-            </button>
 
-            <div className="hidden sm:block">
-              <LanguageSwitcher />
-            </div>
+            {showLanguageSwitcher && (
+              <div className="hidden sm:block">
+                <LanguageSwitcher />
+              </div>
+            )}
 
-            <Link
-              href={localizeHref('/login', currentLang)}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-500/15 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/25 transition-colors"
-              aria-label="Sign in"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-              </svg>
-            </Link>
+            {/* ── Loading placeholder — prevents flash of wrong UI ── */}
+            {isLoading && (
+              <div className="w-16 h-7 rounded-lg bg-white/5 animate-pulse" />
+            )}
+
+            {/* ── Guest: Login + Sign Up ─────────────────────────── */}
+            {isGuest && (
+              <>
+                <Link
+                  href={localizeHref('/login', currentLang)}
+                  className="px-3 py-1.5 text-sm text-white/60 hover:text-white transition-colors"
+                >
+                  Login
+                </Link>
+                {ctaButton?.label && ctaButton?.href ? (
+                  <Link
+                    href={localizeHref(ctaButton.href, currentLang)}
+                    className="hidden sm:inline-flex px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    {ctaButton.label}
+                  </Link>
+                ) : (
+                  <Link
+                    href={localizeHref('/signup', currentLang)}
+                    className="hidden sm:inline-flex px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    Sign up
+                  </Link>
+                )}
+              </>
+            )}
+
+            {/* ── Logged in: profile + logout ────────────────────── */}
+            {isAuthenticated && (
+              <>
+                {/* Profile icon → /settings */}
+                <Link
+                  href={localizeHref('/settings', currentLang)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-500/15 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/25 transition-colors"
+                  aria-label="Profile settings"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                  </svg>
+                </Link>
+
+                {/* Logout */}
+                <button
+                  onClick={handleSignOut}
+                  className="w-8 h-8 hidden sm:flex items-center justify-center rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/5 transition-colors"
+                  aria-label="Sign out"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                  </svg>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -165,103 +216,57 @@ export function Navbar({ siteConfig, navPages = [] }: Props) {
           />
           <div className="fixed top-14 left-0 bottom-0 z-50 w-72 bg-[#0d0e14] border-r border-white/8 flex flex-col md:hidden">
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+
+              {/* Language section */}
               <div className="px-2 py-3 mb-2 border-b border-white/6">
                 <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest mb-2">Language</p>
                 <LanguageSwitcher />
               </div>
 
-              {/* Dynamic nav pages */}
-              {visiblePages.map((page) => {
-                const href     = localizeHref(`/${page.slug}`, currentLang)
+              {/* Nav items filtered by role */}
+              {navItems.map((item) => {
+                const href     = localizeHref(item.href, currentLang)
                 const isActive = pathname === href || (href !== '/' && pathname.startsWith(href))
+                const label    = getNavItemLabel(item.label, currentLang)
                 return (
                   <Link
-                    key={page._id}
+                    key={item._key}
                     href={href}
                     onClick={closeMobile}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                      isActive
-                        ? 'text-white bg-white/8'
-                        : 'text-white/50 hover:text-white hover:bg-white/5'
+                      isActive ? 'text-white bg-white/8' : 'text-white/50 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    {page.title}
+                    {label}
                   </Link>
                 )
               })}
 
-              <Link
-                href={localizeHref('/login', currentLang)}
-                onClick={closeMobile}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors"
-              >
-                Sign in
-              </Link>
+              {/* Guest mobile links */}
+              {isGuest && (
+                <>
+                  <Link href={localizeHref('/login', currentLang)} onClick={closeMobile} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors">
+                    Login
+                  </Link>
+                  <Link href={localizeHref('/signup', currentLang)} onClick={closeMobile} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors">
+                    Sign up
+                  </Link>
+                </>
+              )}
+
+              {/* Authenticated: sign out */}
+              {isAuthenticated && (
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/30 hover:text-red-400 hover:bg-red-500/5 transition-colors text-left"
+                >
+                  Sign out
+                </button>
+              )}
             </nav>
           </div>
         </>
       )}
-
-      {/* ── Mobile bottom nav bar ─────────────────────────────────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-[#0d0e14]/95 backdrop-blur-md border-t border-white/8 pb-safe">
-        <div className="grid grid-cols-4 h-16">
-          {[
-            {
-              href:  currentLang === 'en' ? '/' : `/${currentLang}`,
-              label: 'Home',
-              icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                </svg>
-              ),
-            },
-            {
-              href:  localizeHref('/posts', currentLang),
-              label: 'Posts',
-              icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                </svg>
-              ),
-            },
-            {
-              href:  '/studio',
-              label: 'Studio',
-              icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
-                </svg>
-              ),
-            },
-            {
-              href:  localizeHref('/login', currentLang),
-              label: 'Profile',
-              icon: (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                </svg>
-              ),
-            },
-          ].map(({ href, label, icon }) => {
-            const isActive = pathname === href
-            return (
-              <Link
-                key={label}
-                href={href}
-                className={`flex flex-col items-center justify-center gap-1 transition-colors ${
-                  isActive ? 'text-indigo-400' : 'text-white/30 hover:text-white/60'
-                }`}
-              >
-                {icon}
-                <span className="text-[10px] font-medium">{label}</span>
-              </Link>
-            )
-          })}
-        </div>
-      </nav>
-
-      {/* Bottom nav spacer on mobile */}
-      <div className="h-16 md:hidden" />
     </>
   )
 }

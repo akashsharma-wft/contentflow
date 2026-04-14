@@ -20,7 +20,28 @@
       "Bash(node -e \"const pkg = require\\('./node_modules/next-sanity/package.json'\\); console.log\\('next-sanity:', pkg.version\\)\")",
       "Bash(node -e \"try{const p=require\\('./node_modules/@sanity/visual-editing/package.json'\\);console.log\\('@sanity/visual-editing:',p.version\\)}catch\\(e\\){console.log\\('not installed directly'\\)}\")",
       "Bash(node -e \"const p = require\\('@sanity/presentation-comlink'\\); console.log\\(Object.keys\\(p\\).filter\\(k => k.toLowerCase\\(\\).includes\\('frame'\\) || k.toLowerCase\\(\\).includes\\('preview'\\) || k.toLowerCase\\(\\).includes\\('maybe'\\)\\)\\)\")",
-      "Bash(node -e \"const {isMaybePreviewIframe} = require\\('@sanity/presentation-comlink'\\); console.log\\(isMaybePreviewIframe.toString\\(\\)\\)\")"
+      "Bash(node -e \"const {isMaybePreviewIframe} = require\\('@sanity/presentation-comlink'\\); console.log\\(isMaybePreviewIframe.toString\\(\\)\\)\")",
+      "Bash(cmd /c \"cd \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit 2>&1\")",
+      "Bash(cmd /c \"cd \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit\")",
+      "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit 2>&1\")",
+      "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit\")",
+      "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit && echo TYPECHECK_PASSED || echo TYPECHECK_FAILED\")",
+      "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit 1>tsc_out.txt 2>&1 && echo OK>>tsc_out.txt & type tsc_out.txt & del tsc_out.txt\")",
+      "Bash(del \"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\sections\\\\AuthLegalSection.tsx\")",
+      "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit 1>tsc_result.txt 2>&1 & type tsc_result.txt & del tsc_result.txt\")",
+      "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(require\\('./node_modules/stripe/package.json'\\).version\\)\")",
+      "Bash(node -e \"require\\('next-sanity/studio'\\)\")",
+      "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('@tanstack/react-query:', p.dependencies['@tanstack/react-query']\\)\")",
+      "Bash(npx eslint:*)",
+      "Bash(node -e \"const ns = require\\('./node_modules/next-sanity/dist/studio/NextStudio.js'\\); console.log\\(Object.keys\\(ns\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); print\\(p.get\\('main',''\\), p.get\\('exports',''\\)\\)\")",
+      "Bash(npm install:*)",
+      "Bash(node -e \"require\\('resend'\\); console.log\\('ok'\\)\")",
+      "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit 2>&1 && echo TS_OK\")",
+      "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit > tsc_out.txt 2>&1 && echo PASS || echo FAIL\")",
+      "Bash(cmd /c \"type \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\tsc_out.txt\\\\\"\")",
+      "Bash(cmd /c \"npx --prefix \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" tsc -p \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\tsconfig.json\\\\\" --noEmit 2>&1\")",
+      "Bash(cmd /c \"findstr /s /i \\\\\"unstable_noAuthBoundary\\\\\" \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\node_modules\\\\next-sanity\\\\dist\\\\*.d.ts\\\\\" 2>&1 | head -20\")"
     ]
   }
 }

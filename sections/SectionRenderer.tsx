@@ -21,6 +21,7 @@
 //   layout in app/page.tsx, NOT rendered here.
 
 import type { SanitySection } from '@/types/sanity'
+import { ComponentRenderer }  from '@/components/custom/ComponentRenderer'
 
 // ── Public sections ────────────────────────────────────────────────────────────
 import { HeroSection }           from './HeroSection'
@@ -57,17 +58,38 @@ import { TimelineSection, TeamSection, LogoBarSection } from './TimelineTeamLogo
 import { LoginSection }          from './LoginSection'
 import { SignupSection }         from './SignupSection'
 import { AuthFormSection }       from './AuthFormSection'
-import { AuthLegalSection }      from './AuthLegalSection'
 
 // ── Post detail ───────────────────────────────────────────────────────────────
-import { PostDetailPageSection } from './PostDetailPageSection'
+import { PostDetailPageSection }      from './PostDetailPageSection'
+import { PostDetailHeaderSection }    from './PostDetailHeaderSection'
+import { PostDetailMetaSection }      from './PostDetailMetaSection'
+import { PostDetailBodySection }      from './PostDetailBodySection'
+import { PostDetailTagsSection }      from './PostDetailTagsSection'
+import { PostDetailBackLinkSection }  from './PostDetailBackLinkSection'
 
 // ── App page sections ─────────────────────────────────────────────────────────
-import { PostsPageSection }      from './PostsPageSection'
-import { AnalyticsSection }      from './AnalyticsSection'
-import { SettingsSection }       from './SettingsSection'
-import { BillingSection }        from './BillingSection'
-import { AdminSection }          from './AdminSection'
+import { PostsPageSection }          from './PostsPageSection'
+// Posts sub-sections
+import { PostsHeaderSection }        from './PostsHeaderSection'
+import { PostsStatsSection }         from './PostsStatsSection'
+import { PostsActionsSection }       from './PostsActionsSection'
+import { PostsSearchSection }        from './PostsSearchSection'
+import { PostsTableSection }         from './PostsTableSection'
+import { AnalyticsSection }          from './AnalyticsSection'
+import { SettingsSection }           from './SettingsSection'
+import { BillingSection }            from './BillingSection'
+import { AdminSection }              from './AdminSection'
+// Billing sub-sections
+import { BillingHeaderSection }      from './BillingHeaderSection'
+import { BillingCurrentPlanSection } from './BillingCurrentPlanSection'
+import { BillingUsageSection }       from './BillingUsageSection'
+import { BillingPlansGridSection }   from './BillingPlansGridSection'
+import { BillingFooterSection }      from './BillingFooterSection'
+// Settings sub-sections
+import { SettingsHeaderSection }     from './SettingsHeaderSection'
+import { SettingsInfoSection }       from './SettingsInfoSection'
+import { SettingsFormSection }       from './SettingsFormSection'
+import { SettingsDangerSection }     from './SettingsDangerSection'
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -92,6 +114,13 @@ export async function SectionRenderer({ sections, lang = 'en' }: SectionRenderer
             : `section-${i}`
         const s = section as AnySection
 
+        // ── Component documents (sections[]-> dereferenced) ───────────────
+        // _type === 'component' means it's a component document.
+        // Dispatch directly to ComponentRenderer with the full document.
+        if (s._type === 'component') {
+          return <ComponentRenderer key={key} component={s} lang={lang} />
+        }
+
         // ── Section documents (sections[]-> dereferenced) ──────────────────
         // _type === 'section' means it's a section document from the architecture.
         // Use sectionType to select the component; pass the named content sub-object.
@@ -103,13 +132,37 @@ export async function SectionRenderer({ sections, lang = 'en' }: SectionRenderer
             case 'cta':           return <CtaSection            key={key} section={s.cta ?? {}} />
             case 'authHero':      return <AuthHeroSection       key={key} section={s.authHero ?? {}} />
             case 'authForm':      return <AuthFormSection       key={key} section={s.authForm ?? {}} />
-            case 'authLegal':     return <AuthLegalSection      key={key} section={s.authLegal ?? {}} />
             case 'features':      return <FeatureListSection    key={key} section={s.features ?? {}} />
-            case 'postsList':     return <PostsPageSection      key={key} lang={lang} />
-            case 'analytics':     return <AnalyticsSection      key={key} lang={lang} />
+            case 'postsList':          return <PostsPageSection          key={key} lang={lang} />
+            case 'postDetail':         return <PostDetailPageSection      key={key} section={s.postDetail ?? {}} />
+            // Post Detail sub-sections (config-only — no visible UI in page builder)
+            case 'postDetailHeader':   return <PostDetailHeaderSection    key={key} content={s.postDetailHeader ?? {}} />
+            case 'postDetailMeta':     return <PostDetailMetaSection      key={key} content={s.postDetailMeta ?? {}} />
+            case 'postDetailBody':     return <PostDetailBodySection      key={key} content={s.postDetailBody ?? {}} />
+            case 'postDetailTags':     return <PostDetailTagsSection      key={key} content={s.postDetailTags ?? {}} />
+            case 'postDetailBackLink': return <PostDetailBackLinkSection  key={key} content={s.postDetailBackLink ?? {}} />
+            // Posts sub-sections
+            case 'postsHeader':   return <PostsHeaderSection    key={key} content={s.postsHeader ?? {}} />
+            case 'postsStats':    return <PostsStatsSection     key={key} content={s.postsStats ?? {}} lang={lang} />
+            case 'postsActions':  return <PostsActionsSection   key={key} content={s.postsActions ?? {}} lang={lang} />
+            case 'postsSearch':   return <PostsSearchSection    key={key} content={s.postsSearch ?? {}} />
+            case 'postsTable':    return <PostsTableSection     key={key} content={s.postsTable ?? {}} lang={lang} />
+            case 'analytics':          return <AnalyticsSection          key={key} lang={lang} content={s.analytics ?? {}} />
+            // Billing sub-sections
+            case 'billingHeader':      return <BillingHeaderSection      key={key} content={s.billingHeader ?? {}} />
+            case 'billingCurrentPlan': return <BillingCurrentPlanSection key={key} content={s.billingCurrentPlan ?? {}} />
+            case 'billingUsage':       return <BillingUsageSection       key={key} content={s.billingUsage ?? {}} />
+            case 'billingPlansGrid':   return <BillingPlansGridSection   key={key} content={s.billingPlansGrid ?? {}} />
+            case 'billingFooter':      return <BillingFooterSection      key={key} content={s.billingFooter ?? {}} />
+            // Settings sub-sections
+            case 'settingsHeader':     return <SettingsHeaderSection     key={key} content={s.settingsHeader ?? {}} />
+            case 'settingsInfo':       return <SettingsInfoSection       key={key} content={s.settingsInfo ?? {}} />
+            case 'settingsForm':       return <SettingsFormSection       key={key} content={s.settingsForm ?? {}} />
+            case 'settingsDanger':     return <SettingsDangerSection     key={key} content={s.settingsDanger ?? {}} />
+            // Legacy single-section fallbacks
             case 'settings':      return <SettingsSection       key={key} lang={lang} />
             case 'billing':       return <BillingSection        key={key} lang={lang} />
-            case 'admin':         return <AdminSection          key={key} lang={lang} />
+            case 'admin':         return <AdminSection          key={key} lang={lang} content={s.admin ?? {}} />
             default:
               if (process.env.NODE_ENV === 'development') {
                 console.warn(`[SectionRenderer] Unknown sectionType: "${s.sectionType}" on section doc "${s._id}"`)
@@ -130,8 +183,7 @@ export async function SectionRenderer({ sections, lang = 'en' }: SectionRenderer
           case 'postsSection':         return <PostsPageSection      key={key} lang={lang} />
           case 'authSection':          return <AuthFormSection       key={key} section={s} />
           case 'authHeroSection':      return <AuthHeroSection       key={key} section={s} />
-          case 'authLegalSection':     return <AuthLegalSection      key={key} section={s} />
-          case 'analyticsSection':     return <AnalyticsSection      key={key} lang={lang} />
+          case 'analyticsSection':     return <AnalyticsSection      key={key} lang={lang} content={{}} />
           case 'navbarSection':
           case 'footerSection':
             return null
@@ -170,10 +222,10 @@ export async function SectionRenderer({ sections, lang = 'en' }: SectionRenderer
           case 'postDetailPageSection': return <PostDetailPageSection key={key} section={s} />
 
           case 'postsPageSection':     return <PostsPageSection      key={key} lang={lang} />
-          case 'analyticsPageSection': return <AnalyticsSection      key={key} lang={lang} />
+          case 'analyticsPageSection': return <AnalyticsSection      key={key} lang={lang} content={{}} />
           case 'settingsPageSection':  return <SettingsSection       key={key} lang={lang} />
           case 'billingPageSection':   return <BillingSection        key={key} lang={lang} />
-          case 'adminPageSection':     return <AdminSection          key={key} lang={lang} />
+          case 'adminPageSection':     return <AdminSection          key={key} lang={lang} content={{}} />
 
           default:
             if (process.env.NODE_ENV === 'development') {

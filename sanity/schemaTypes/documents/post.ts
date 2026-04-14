@@ -22,7 +22,23 @@ export const postType = defineType({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      options: { source: 'title', maxLength: 96 },
+      options: {
+        source: 'title',
+        maxLength: 96,
+        isUnique: async (slug, context) => {
+          // Same slug is allowed in different languages — uniqueness is (slug, language) pair
+          const { document, getClient } = context
+          if (!document) return true
+          const client = getClient({ apiVersion: '2024-01-01' })
+          const id   = document._id.replace(/^drafts\./, '')
+          const lang = (document as { language?: string }).language ?? 'en'
+          const count = await client.fetch<number>(
+            `count(*[_type == "post" && slug.current == $slug && language == $lang && !(_id in [$id, "drafts." + $id])])`,
+            { slug, lang, id }
+          )
+          return count === 0
+        },
+      },
       validation: R => R.required(),
     }),
     defineField({
@@ -97,7 +113,13 @@ export const postType = defineType({
     defineField({ name: 'authorId',     title: 'Author ID',     type: 'string', readOnly: true }),
     defineField({ name: 'authorName',   title: 'Author Name',   type: 'string', readOnly: true }),
     defineField({ name: 'authorEmail',  title: 'Author Email',  type: 'string', readOnly: true }),
-    defineField({ name: 'authorAvatar', title: 'Author Avatar', type: 'url',    readOnly: true }),
+    defineField({
+      name: 'authorAvatar',
+      title: 'Author Avatar',
+      type: 'image',
+      description: 'Upload the author\'s profile photo.',
+      options: { hotspot: true },
+    }),
   ],
   preview: {
     select: {

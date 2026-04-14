@@ -16,7 +16,7 @@ const POST_CARD_FIELDS = groq`
   authorId,
   authorName,
   authorEmail,
-  authorAvatar,
+  "authorAvatar": authorAvatar.asset->url,
   "coverImage": coverImage.asset->url
 `
 
@@ -27,20 +27,22 @@ const POST_FULL_FIELDS = groq`
 `
 
 /**
- * Sections projection.
+ * Sections + Components projection.
  *
- * All entries in page.sections[] are references to `section` documents.
- * Dereference with []-> to get the full section doc including all content
- * sub-objects (hero, featuredPosts, recentPosts, cta, authHero, authForm,
- * authLegal, features, postsList, analyticsMarker, settingsMarker,
- * billingMarker, adminMarker).
+ * page.sections[] can reference either `section` OR `component` documents.
+ * GROQ dereferences both with []->. Consumers check _type:
+ *   • _type === 'section'   → handled by SectionRenderer (sectionType discriminator)
+ *   • _type === 'component' → handled by ComponentRenderer (componentType discriminator)
  *
  * backgroundImage inside hero is expanded so @sanity/image-url can resolve it.
+ * Image fields inside component sub-objects get asset-> expansion for URL resolution.
  */
 const SECTIONS_PROJECTION = groq`
   "sections": sections[]-> {
     _id,
     _type,
+
+    // ── Section document fields ───────────────────────────────────────────────
     sectionType,
     title,
     language,
@@ -56,18 +58,156 @@ const SECTIONS_PROJECTION = groq`
       features[] { _key, icon, text }
     },
     authForm,
-    authLegal {
-      links[] { _key, label, href }
-    },
     features {
       ...,
       features[] { _key, title, description, icon }
     },
     postsList,
-    analyticsMarker,
-    settingsMarker,
-    billingMarker,
-    adminMarker
+    postDetail,
+    // Post Detail sub-sections
+    postDetailHeader { heading, featuredBadgeLabel, languageBadgeLabel, editInStudioLabel },
+    postDetailMeta { authorLabel, dateFormatLabel, unpublishedLabel },
+    postDetailBody { emptyBodyText, shareLabel, linkCopiedText },
+    postDetailTags { tagsHeading, emptyTagsText },
+    postDetailBackLink { backLabel, allPostsLabel, prevLabel, nextLabel, backHref },
+    analytics {
+      heading, subheading,
+      eventsLabel, usersLabel, avgSessionLabel,
+      liveStreamLabel, refreshLabel,
+      emptyTitle, emptyBody,
+      featureFlagLabel, featureFlagEnabledNote, featureFlagDisabledNote,
+      connectedLabel, ctaLabel,
+      showingLabel, prevLabel, nextLabel
+    },
+    // Billing sub-sections
+    billingHeader { heading, subheading },
+    billingCurrentPlan {
+      currentPlanLabel, activeBadgeLabel, cancellingBadgeLabel, freeTierBadgeLabel,
+      manageLabel, cancelLabel, reactivateLabel, upgradeLabel, cancellingNote
+    },
+    billingUsage {
+      usageHeading, postsUsageLabel, apiUsageLabel, storageUsageLabel, seatsUsageLabel
+    },
+    billingPlansGrid {
+      plansHeading,
+      freePlanName, freePlanTagline, freePlanPrice, freePlanFeatures[],
+      proPlanName, proPlanTagline, proPlanBadge, proPlanFeatures[],
+      upgradeLabel, downgradeLabel, downgradeScheduledLabel, currentPlanButtonLabel
+    },
+    billingFooter { stripeNote, webhookNote },
+    // Settings sub-sections
+    settingsHeader { heading, subheading },
+    settingsInfo { uploadPhotoLabel },
+    settingsForm {
+      profileSectionLabel, metadataLabel,
+      displayNameLabel, emailLabel, emailHelperText,
+      bioLabel, bioPlaceholder, bioMaxLength,
+      websiteLabel, websitePlaceholder, websiteErrorText,
+      saveLabel, discardLabel
+    },
+    settingsDanger { heading, body, warningText, deleteLabel },
+    // Posts sub-sections
+    postsHeader { heading, subheading, groqBadgeLabel },
+    postsStats { myPostsLabel, publishedLabel, draftsLabel },
+    postsActions { syncButtonLabel, newPostButtonLabel },
+    postsSearch { searchPlaceholder },
+    postsTable {
+      colTitle, colStatus, colImage, colTags, colLastModified,
+      emptyTitle, emptyBody, emptyCtaLabel,
+      showingLabel, loadMoreLabel, connectedLabel,
+      viewPostLabel, editPostLabel, deletePostLabel,
+      deleteDialogTitle, deleteDialogBody, deleteDialogConfirmLabel, deleteDialogCancelLabel
+    },
+    admin {
+      heading, subheading,
+      totalUsersLabel, proLabel, freeLabel,
+      colUser, colPlan, colRole, colJoined,
+      emptyLabel, footerNote,
+      inviteSectionHeading, inviteFormTitle,
+      inviteEmailLabel, inviteEmailPlaceholder,
+      inviteMessageLabel, inviteSendLabel,
+      pendingInvitesHeading, inviteEmptyLabel, cancelInviteLabel,
+      pendingRequestsHeading, requestEmptyLabel,
+      approveLabel, rejectLabel,
+      colEmail, colType, colSentAt, colActions
+    },
+
+    // ── Component document fields ─────────────────────────────────────────────
+    name,
+    componentType,
+    // Layout chrome
+    navbar {
+      logoText, variant, showAuth,
+      links[] { label, href, external },
+      ctaButton { label, href }
+    },
+    footer {
+      logoText, tagline, copyright, showLogo,
+      columns[] {
+        heading,
+        links[] { label, href, external }
+      },
+      socialLinks[] { platform, href }
+    },
+    sidebar {
+      logoText, logoHref, collapsible, showUserProfile, defaultCollapsed,
+      navItems[]    { label, href, icon, adminOnly },
+      footerItems[] { label, href, icon, adminOnly }
+    },
+    mobileNavTop {
+      logoText, showLogo, showMenuButton,
+      actions[] { type, label }
+    },
+    mobileNavBottom {
+      showLabels,
+      items[] { label, href, icon, activeIcon, adminOnly }
+    },
+    // Content blocks
+    form {
+      heading, subheading, method, action, submitLabel, successMessage,
+      fields[] {
+        name, label, fieldType, placeholder, required, helperText,
+        options[] { label, value }
+      }
+    },
+    grid {
+      heading, subheading, columns, cardStyle,
+      items[] {
+        heading, body, icon, linkLabel, linkHref,
+        image { ..., asset-> }
+      }
+    },
+    cards {
+      heading, layout,
+      items[] {
+        heading, body, badge, tags, ctaLabel, ctaHref,
+        image { ..., asset-> }
+      }
+    },
+    pricingTable {
+      heading, subheading, currency, billingToggle,
+      plans[] {
+        name, description, monthlyPrice, yearlyPrice, priceNote,
+        badge, highlighted, ctaLabel, ctaHref,
+        features[] { text, included }
+      }
+    },
+    dataTable {
+      heading, description, striped, bordered, pagination, pageSize,
+      columns[] { key, label, sortable, align },
+      rows[]    { cells[] { key, value } }
+    },
+    list {
+      heading, style, columns,
+      items[] { text, description, icon, badge }
+    },
+    flex {
+      heading, direction, wrap, gap, align, justify,
+      items[] {
+        heading, body, width,
+        image { ..., asset-> }
+      }
+    }
   }
 `
 
@@ -350,7 +490,99 @@ export const SITE_CONFIG_QUERY = groq`
   *[_type == "siteConfig" && _id == "site-config"][0] {
     _id,
     title,
-    siteName
+    siteName,
+
+    navbarConfig {
+      brandName,
+      showLanguageSwitcher,
+      ctaButton { label, href },
+      items[] { _key, label { en, hi, kn }, href, icon, visibleFor }
+    },
+
+    footerConfig {
+      brandName,
+      showBrandLogo,
+      tagline,
+      copyright,
+      socialLinks[] { _key, platform, label, href },
+      columns[] {
+        _key,
+        heading,
+        links[] { _key, label, href, external }
+      },
+      bottomLinks[] { _key, label, href, external }
+    },
+
+    sidebarConfig {
+      brandName,
+      brandSubtitle,
+      ctaButton { label, href },
+      statusText,
+      statusBadge,
+      navItems[]    { _key, label { en, hi, kn }, href, icon, visibleFor },
+      footerLinks[] { _key, label, href, icon, external }
+    },
+
+    mobileNavConfig {
+      showLabels,
+      items[] { _key, label { en, hi, kn }, href, icon, visibleFor }
+    }
+  }
+`
+
+// ─── Component queries ─────────────────────────────────────────────────────────
+
+/**
+ * All component documents for a given language.
+ * Params: { lang: string }
+ */
+export const COMPONENTS_BY_LANG_QUERY = groq`
+  *[_type == "component" && language == $lang] | order(name asc) {
+    _id,
+    _type,
+    name,
+    language,
+    componentType
+  }
+`
+
+/**
+ * Single component document by ID.
+ * Params: { id: string }
+ */
+export const COMPONENT_BY_ID_QUERY = groq`
+  *[_type == "component" && _id == $id][0] {
+    _id,
+    _type,
+    name,
+    language,
+    componentType,
+    navbar, footer, sidebar, mobileNavTop, mobileNavBottom,
+    form, grid, cards, pricingTable, dataTable, list, flex
+  }
+`
+
+// ─── Post detail section config queries ───────────────────────────────────────
+
+/**
+ * Fetch all post detail section config documents for a given language.
+ * The route file uses these to assemble label props for PostDetail.
+ * Params: { lang: string }
+ */
+export const POST_DETAIL_SECTIONS_QUERY = groq`
+  *[
+    _type == "section"
+    && page == "postDetail"
+    && language == $lang
+    && !(_id in path("drafts.**"))
+  ] {
+    _id,
+    sectionType,
+    postDetailHeader { heading, featuredBadgeLabel, languageBadgeLabel, editInStudioLabel },
+    postDetailMeta { authorLabel, dateFormatLabel, unpublishedLabel },
+    postDetailBody { emptyBodyText, shareLabel, linkCopiedText },
+    postDetailTags { tagsHeading, emptyTagsText },
+    postDetailBackLink { backLabel, allPostsLabel, prevLabel, nextLabel, backHref }
   }
 `
 

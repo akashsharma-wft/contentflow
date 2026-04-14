@@ -2,11 +2,13 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 // These paths are ALWAYS public regardless of Sanity config
-const ALWAYS_PUBLIC = ['/studio', '/api/', '/login', '/signup', '/auth/']
+// NOTE: /studio is intentionally absent — it is auth-gated (see ALWAYS_AUTH below)
+const ALWAYS_PUBLIC = ['/api/', '/login', '/signup', '/auth/']
 // These match language-prefixed versions too
 const ALWAYS_PUBLIC_SLUGS = ['login', 'signup']
 // App pages that always require auth (fast-path, no Sanity fetch needed)
-const ALWAYS_AUTH = ['posts', 'analytics', 'settings', 'billing', 'admin']
+// 'studio' is included so unauthenticated users are redirected to login
+const ALWAYS_AUTH = ['posts', 'analytics', 'settings', 'billing', 'admin', 'studio']
 const ALWAYS_ADMIN = ['admin', 'analytics']
 
 const LANGS = ['hi', 'kn', 'en']

@@ -2,27 +2,34 @@
 'use client'
 
 import { format } from 'date-fns'
+import { useState } from 'react'
 import { Shield, Crown, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Database } from '@/types/supabase'
+import type { SectionAdminContent } from '@/types/sanity'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
-interface AdminConfig {
-  heading?: string
-  subheading?: string
-  totalUsersLabel?: string
-  colUser?: string
-  colPlan?: string
-  colRole?: string
-  colJoined?: string
-  footerNote?: string
-  emptyLabel?: string
-}
-
 interface AdminUsersTableProps {
   users: Profile[]
-  config: AdminConfig
+  config: SectionAdminContent
+}
+
+/** Avatar with graceful fallback when the image URL is missing or broken. */
+function UserAvatar({ avatarUrl, displayName }: { avatarUrl: string | null; displayName: string | null }) {
+  const [failed, setFailed] = useState(false)
+
+  if (avatarUrl && !failed) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={displayName ?? ''}
+        className="w-full h-full object-cover"
+        onError={() => setFailed(true)}
+      />
+    )
+  }
+  return <User size={12} className="text-indigo-300" />
 }
 
 export function AdminUsersTable({ users, config }: AdminUsersTableProps) {
@@ -30,7 +37,7 @@ export function AdminUsersTable({ users, config }: AdminUsersTableProps) {
   const freeCount = users.filter((u) => u.subscription_tier === 'free').length
 
   return (
-    <div className="py-6 space-y-5">
+    <div className="space-y-5">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3">
@@ -50,10 +57,10 @@ export function AdminUsersTable({ users, config }: AdminUsersTableProps) {
             </span>
           </div>
           <div className="px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-            <span className="text-purple-300 text-xs font-mono">{proCount} pro</span>
+            <span className="text-purple-300 text-xs font-mono">{proCount} {config.proLabel ?? 'pro'}</span>
           </div>
           <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg">
-            <span className="text-white/40 text-xs font-mono">{freeCount} free</span>
+            <span className="text-white/40 text-xs font-mono">{freeCount} {config.freeLabel ?? 'free'}</span>
           </div>
         </div>
       </div>
@@ -80,12 +87,8 @@ export function AdminUsersTable({ users, config }: AdminUsersTableProps) {
                 i < users.length - 1 && 'border-b border-white/5'
               )}
             >
-              <div className="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center overflow-hidden">
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={12} className="text-indigo-300" />
-                )}
+              <div className="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center overflow-hidden shrink-0">
+                <UserAvatar avatarUrl={user.avatar_url} displayName={user.display_name} />
               </div>
 
               <div className="min-w-0 pl-2">

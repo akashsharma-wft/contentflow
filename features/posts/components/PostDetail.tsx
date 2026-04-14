@@ -7,6 +7,13 @@ import { ArrowLeft, Share2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { usePostHog } from 'posthog-js/react'
 import { toast } from 'sonner'
+import type {
+  SectionPostDetailHeaderContent,
+  SectionPostDetailMetaContent,
+  SectionPostDetailBodyContent,
+  SectionPostDetailTagsContent,
+  SectionPostDetailBackLinkContent,
+} from '@/types/sanity'
 
 interface PostDetailProps {
   post: {
@@ -27,6 +34,13 @@ interface PostDetailProps {
   }
   prevSlug?: string | null
   nextSlug?: string | null
+  lang?: string
+  // CMS-sourced labels — all optional with hardcoded fallbacks
+  headerContent?:   SectionPostDetailHeaderContent | null
+  metaContent?:     SectionPostDetailMetaContent | null
+  bodyContent?:     SectionPostDetailBodyContent | null
+  tagsContent?:     SectionPostDetailTagsContent | null
+  backLinkContent?: SectionPostDetailBackLinkContent | null
 }
 
 
@@ -97,36 +111,61 @@ const portableTextComponents = {
   },
 }
 
-export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
+export function PostDetail({
+  post,
+  prevSlug,
+  nextSlug,
+  lang = 'en',
+  headerContent,
+  metaContent,
+  bodyContent,
+  backLinkContent,
+}: PostDetailProps) {
   const posthog = usePostHog()
 
-  // Replace the broken lines:
-  const authorName    = post.authorName ?? post.author?.name ?? 'Unknown'
-  const authorAvatar  = post.authorAvatar ?? post.author?.avatar ?? null
+  const authorName     = post.authorName ?? post.author?.name ?? 'Unknown'
+  const authorAvatar   = post.authorAvatar ?? post.author?.avatar ?? null
   const authorInitials = authorName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
 
-  // Fix the posthog capture:
+  // CMS labels with fallbacks
+  const featuredBadgeLabel = headerContent?.featuredBadgeLabel ?? 'Featured'
+  const editInStudioLabel  = headerContent?.editInStudioLabel  ?? 'Edit in Sanity Studio →'
+  const unpublishedLabel   = metaContent?.unpublishedLabel     ?? 'Unpublished'
+  const emptyBodyText      = bodyContent?.emptyBodyText        ?? 'No content yet.'
+  const shareLabel         = bodyContent?.shareLabel           ?? 'Share'
+  const linkCopiedText     = bodyContent?.linkCopiedText       ?? 'Link copied!'
+  const backLabel          = backLinkContent?.backLabel        ?? 'Back to Posts'
+  const allPostsLabel      = backLinkContent?.allPostsLabel    ?? 'All Posts'
+  const prevLabel          = backLinkContent?.prevLabel        ?? 'Previous'
+  const nextLabel          = backLinkContent?.nextLabel        ?? 'Next'
+  const backHref           = backLinkContent?.backHref         ?? '/posts'
+
+  // Build language-aware slug hrefs
+  function postHref(slug: string) {
+    return lang === 'en' ? `/${slug}` : `/${lang}/${slug}`
+  }
+
   useEffect(() => {
-    if(!posthog) return
-    posthog?.capture('post_viewed', {
-      slug: post.slug,
-      title: post.title,
-      author: authorName,
+    if (!posthog) return
+    posthog.capture('post_viewed', {
+      slug:     post.slug,
+      title:    post.title,
+      author:   authorName,
       featured: post.featured,
+      lang,
     })
   }, [post.slug]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  
   return (
-    <div className="max-w-[680px] mx-auto px-5 lg:px-8 py-8">
+    <div className="max-w-170 mx-auto px-5 lg:px-8 py-8">
 
-      {/* Back link — matches Figma "← Back to Posts" */}
+      {/* Back link */}
       <Link
-        href="/posts"
+        href={backHref}
         className="inline-flex items-center gap-2 text-white/35 hover:text-white/70 text-sm mb-6 transition-colors cursor-pointer group"
       >
         <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-        Back to Posts
+        {backLabel}
       </Link>
 
       {/* Tags row */}
@@ -142,7 +181,7 @@ export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
           ))}
           {post.featured && (
             <span className="px-2.5 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] uppercase tracking-widest font-mono rounded">
-              Featured
+              {featuredBadgeLabel}
             </span>
           )}
         </div>
@@ -156,7 +195,6 @@ export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
       {/* Author + meta row */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2.5">
-          {/* Author avatar */}
           <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-semibold shrink-0">
             {authorAvatar
               ? <img src={authorAvatar} alt={authorName} className="w-full h-full rounded-full object-cover" />
@@ -166,7 +204,7 @@ export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
           <div>
             <p className="text-white/70 text-sm font-medium">{authorName}</p>
             <p className="text-white/30 text-xs">
-              {post.publishedAt ? format(new Date(post.publishedAt), 'MMM dd, yyyy') : 'Unpublished'}
+              {post.publishedAt ? format(new Date(post.publishedAt), 'MMM dd, yyyy') : unpublishedLabel}
             </p>
           </div>
         </div>
@@ -174,7 +212,7 @@ export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
 
       {/* Cover image */}
       {post.coverImage && (
-        <div className="mb-6 rounded-xl overflow-hidden border border-white/5 aspect-video bg-gradient-to-br from-indigo-500/20 to-teal-500/20">
+        <div className="mb-6 rounded-xl overflow-hidden border border-white/5 aspect-video bg-linear-to-br from-indigo-500/20 to-teal-500/20">
           <img
             src={post.coverImage}
             alt={post.title}
@@ -188,59 +226,59 @@ export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
         {post.body ? (
           <PortableText value={post.body as Parameters<typeof PortableText>[0]['value']} components={portableTextComponents} />
         ) : (
-          <p className="text-white/30 text-sm italic">No content yet.</p>
+          <p className="text-white/30 text-sm italic">{emptyBodyText}</p>
         )}
       </article>
 
-      {/* Bottom navigation — matches Figma back/share/next */}
+      {/* Bottom navigation */}
       <div className="flex items-center justify-between pt-8 mt-8 border-t border-white/5">
         {prevSlug ? (
-            <Link
-            href={`/posts/${prevSlug}`}
+          <Link
+            href={postHref(prevSlug)}
             className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/50 hover:text-white text-sm rounded-lg transition-all cursor-pointer"
-            >
+          >
             <ChevronLeft size={14} />
-            Previous
-            </Link>
+            {prevLabel}
+          </Link>
         ) : (
-            <Link
-            href="/posts"
+          <Link
+            href={backHref}
             className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/50 hover:text-white text-sm rounded-lg transition-all cursor-pointer"
-            >
+          >
             <ChevronLeft size={14} />
-            All Posts
-            </Link>
+            {allPostsLabel}
+          </Link>
         )}
 
         <button
-            onClick={() => {
+          onClick={() => {
             navigator.clipboard.writeText(window.location.href)
-            toast.success('Link copied!')
-            }}
-            className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/50 hover:text-white text-sm rounded-lg transition-all cursor-pointer"
+            toast.success(linkCopiedText)
+          }}
+          className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/8 border border-white/10 text-white/50 hover:text-white text-sm rounded-lg transition-all cursor-pointer"
         >
-            <Share2 size={14} />
-            Share
+          <Share2 size={14} />
+          {shareLabel}
         </button>
 
         {nextSlug ? (
-            <Link
-            href={`/posts/${nextSlug}`}
+          <Link
+            href={postHref(nextSlug)}
             className="flex items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
-            >
-            Next
+          >
+            {nextLabel}
             <ChevronRight size={14} />
-            </Link>
+          </Link>
         ) : (
-            <Link
-            href="/posts"
+          <Link
+            href={backHref}
             className="flex items-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
-            >
-            All Posts
+          >
+            {allPostsLabel}
             <ChevronRight size={14} />
-            </Link>
+          </Link>
         )}
-        </div>
+      </div>
 
       {/* Edit in Sanity Studio link */}
       <div className="flex justify-start pt-4">
@@ -254,7 +292,7 @@ export function PostDetail({ post, prevSlug, nextSlug }: PostDetailProps) {
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Edit in Sanity Studio →
+          {editInStudioLabel}
         </a>
       </div>
     </div>
