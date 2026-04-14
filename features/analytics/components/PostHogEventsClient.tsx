@@ -68,6 +68,8 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
   const { user } = useUser()
   const [events, setEvents] = useState<LiveEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [configured, setConfigured] = useState(true)
+  const [apiError, setApiError] = useState<string | null>(null)
   const [featureFlagEnabled, setFeatureFlagEnabled] = useState(serverFlags.showFeaturedBanner)
   const [stats, setStats] = useState({ eventsToday: 0, uniqueUsers: 0, avgSession: '—' })
   const [sortMode, setSortMode] = useState<SortMode>('time')
@@ -76,20 +78,27 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [page, setPage] = useState(1)
 
+  function applyData(data: Record<string, unknown>) {
+    const isConfigured = data.configured !== false
+    setConfigured(isConfigured)
+    setApiError(isConfigured ? null : ((data.apiError as string) ?? null))
+    setEvents((data.events as LiveEvent[]) ?? [])
+    setStats({
+      eventsToday: (data.eventsToday as number) ?? 0,
+      uniqueUsers: (data.uniqueUsers as number) ?? 0,
+      avgSession:  (data.avgSession  as string)  ?? '—',
+    })
+    setCustomEvents((data.customEvents as LiveEvent[]) ?? [])
+    setSystemEvents((data.systemEvents as LiveEvent[]) ?? [])
+  }
+
   async function refreshEvents() {
     setIsRefreshing(true)
     try {
       const response = await fetch('/api/analytics/events')
       if (response.ok) {
         const data = await response.json()
-        setEvents(data.events ?? [])
-        setStats({
-          eventsToday: data.eventsToday ?? 0,
-          uniqueUsers: data.uniqueUsers ?? 0,
-          avgSession: data.avgSession ?? '—',
-        })
-        setCustomEvents(data.customEvents ?? [])
-        setSystemEvents(data.systemEvents ?? [])
+        applyData(data)
       }
     } finally {
       setIsRefreshing(false)
@@ -102,23 +111,17 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
         const response = await fetch('/api/analytics/events')
         if (response.ok) {
           const data = await response.json()
-          setEvents(data.events ?? [])
-          setStats({
-            eventsToday: data.eventsToday ?? 0,
-            uniqueUsers: data.uniqueUsers ?? 0,
-            avgSession: data.avgSession ?? '—',
-          })
-          setCustomEvents(data.customEvents ?? [])
-          setSystemEvents(data.systemEvents ?? [])
+          applyData(data)
         }
       } catch {
-        // PostHog API not configured — show empty state
+        // network error — leave configured:true, show empty state
       } finally {
         setIsLoading(false)
       }
     }
     fetchEvents()
     posthog?.capture('page_view', { path: '/analytics' })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posthog])
 
   useEffect(() => {
@@ -216,6 +219,21 @@ export function PostHogEventsClient({ config, serverFlags }: PostHogEventsClient
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 size={20} className="animate-spin text-white/20" />
+          </div>
+        ) : !configured ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+              <Activity size={18} className="text-amber-400/60" />
+            </div>
+            <p className="text-white/40 text-sm">Analytics not configured</p>
+            {apiError ? (
+              <p className="text-amber-400/60 text-xs max-w-sm text-center font-mono">{apiError}</p>
+            ) : (
+              <p className="text-white/20 text-xs max-w-xs text-center font-mono">
+                Set <span className="text-amber-400/70">POSTHOG_PERSONAL_API_KEY</span> and{' '}
+                <span className="text-amber-400/70">POSTHOG_PROJECT_ID</span> in your env to enable event streaming.
+              </p>
+            )}
           </div>
         ) : events.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">

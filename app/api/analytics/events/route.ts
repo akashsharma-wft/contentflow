@@ -19,7 +19,13 @@ export async function GET(request: NextRequest) {
     const projectId = process.env.POSTHOG_PROJECT_ID
 
     if (!posthogPersonalKey || !projectId) {
+      console.warn(
+        '[analytics/events] Missing env vars: ' +
+        (!posthogPersonalKey ? 'POSTHOG_PERSONAL_API_KEY ' : '') +
+        (!projectId ? 'POSTHOG_PROJECT_ID' : '')
+      )
       return NextResponse.json({
+        configured: false,
         events: [],
         customEvents: [],
         systemEvents: [],
@@ -43,8 +49,13 @@ export async function GET(request: NextRequest) {
     )
 
     if (!eventsRes.ok) {
-      console.error('PostHog events fetch failed')
+      const errText = await eventsRes.text().catch(() => '')
+      console.error(`PostHog events fetch failed: ${eventsRes.status} ${eventsRes.statusText}`, errText)
+      // Treat a failed PostHog API call as a configuration error so the frontend
+      // can show a meaningful message instead of silent "No events yet".
       return NextResponse.json({
+        configured: false,
+        apiError: `PostHog API ${eventsRes.status}: check POSTHOG_PERSONAL_API_KEY and POSTHOG_PROJECT_ID`,
         events: [],
         customEvents: [],
         systemEvents: [],
@@ -160,6 +171,7 @@ export async function GET(request: NextRequest) {
 
     // ─── Final Response ──────────────────────────────────────────────────────
     return NextResponse.json({
+      configured: true,
       events: allEvents.sort(
         (a, b) =>
           new Date(b.timestamp).getTime() -
@@ -175,6 +187,7 @@ export async function GET(request: NextRequest) {
     console.error('Analytics route error:', err)
 
     return NextResponse.json({
+      configured: true,
       events: [],
       customEvents: [],
       systemEvents: [],

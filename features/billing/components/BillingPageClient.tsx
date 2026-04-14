@@ -49,12 +49,14 @@ interface BillingPageClientProps {
 function BillingContent({ config }: BillingPageClientProps) {
   const router = useRouter()
   const posthog = usePostHog()
-  const { user } = useUser()
+  // ctxProfile: the profile already fetched by AuthProvider (used for display).
+  // It hydrates async after getSession(), so it may be null on first render.
+  const { user, profile: ctxProfile } = useUser()
   const supabase = createClient()
   const queryClient = useQueryClient()
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false)
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: queryProfile, isLoading: isQueryLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -68,6 +70,23 @@ function BillingContent({ config }: BillingPageClientProps) {
     enabled: !!user?.id,
     refetchInterval: 10000,
   })
+
+  // Use query data if available; fall back to AuthContext profile while query loads.
+  // This prevents the Free→Pro flash: ctxProfile has the real tier from the shared
+  // AuthProvider fetch, so we never default to 'free' once auth is resolved.
+  const profile = queryProfile ?? (ctxProfile
+    ? {
+        subscription_tier: ctxProfile.subscription_tier,
+        display_name: ctxProfile.display_name,
+        email: ctxProfile.email,
+        subscription_cancel_at: ctxProfile.subscription_cancel_at ?? null,
+      }
+    : null)
+
+  // Show skeleton until we have real profile data from ANY source.
+  // React Query v5 reports isLoading:false when enabled:false (query disabled because
+  // user is null), so we must also gate on !profile to cover that case.
+  const isLoading = isQueryLoading || !profile
 
   const currentTier = (profile?.subscription_tier as 'free' | 'pro') ?? 'free'
   const isPro = currentTier === 'pro'

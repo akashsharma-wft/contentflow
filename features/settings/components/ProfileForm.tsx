@@ -62,6 +62,12 @@ export function ProfileForm({ config }: ProfileFormProps) {
   const queryClient = useQueryClient()
   const { user } = useUser()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  // formReady gates the skeleton: the form starts with empty defaultValues, and
+  // the useEffect below resets it with real profile data. Without this flag, the
+  // skeleton would disappear the moment the query returns (profile truthy) but the
+  // form fields would still be blank for one paint cycle — showing an empty profile
+  // card while the Danger Zone (which uses config props) renders immediately.
+  const [formReady, setFormReady] = useState(false)
   const posthog = usePostHog()
 
   const form = useForm<ProfileFormData>({
@@ -92,6 +98,7 @@ export function ProfileForm({ config }: ProfileFormProps) {
         website: profile.website ?? '',
         avatarUrl: profile.avatar_url ?? '',
       })
+      setFormReady(true)
     }
   }, [profile, user, form])
 
@@ -134,12 +141,18 @@ export function ProfileForm({ config }: ProfileFormProps) {
     }
   }
 
-  if (isLoading || !profile) {
+  if (isLoading || !profile || !formReady) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-24 w-full rounded-2xl bg-white/5" />
         <Skeleton className="h-64 w-full rounded-2xl bg-white/5" />
-        <Skeleton className="h-32 w-full rounded-2xl bg-white/5" />
+        {/* Danger Zone skeleton — red border mirrors the actual card */}
+        <div className="bg-[#13141c] border border-red-500/10 rounded-2xl p-5 space-y-3 animate-pulse">
+          <Skeleton className="h-4 w-24 rounded bg-red-500/10" />
+          <Skeleton className="h-3 w-full rounded bg-white/5" />
+          <Skeleton className="h-3 w-3/4 rounded bg-white/5" />
+          <Skeleton className="h-8 w-32 rounded-lg bg-red-500/10 mt-1" />
+        </div>
       </div>
     )
   }
