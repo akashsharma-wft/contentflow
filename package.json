@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "dotenv -e .env.local -- tsx scripts/seed.ts",
+    "cleanup": "dotenv -e .env.local -- tsx scripts/cleanup.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

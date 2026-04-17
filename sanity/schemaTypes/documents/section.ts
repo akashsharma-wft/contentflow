@@ -51,9 +51,10 @@ const PAGE_OPTIONS = [
   { title: 'Posts',      value: 'posts'      },
   { title: 'Post Detail', value: 'postDetail' },
   { title: 'Settings',   value: 'settings'   },
-  { title: 'Billing',    value: 'billing'    },
-  { title: 'Analytics',  value: 'analytics'  },
-  { title: 'Admin',      value: 'admin'      },
+  { title: 'Billing',         value: 'billing'         },
+  { title: 'Billing Success', value: 'billing-success' },
+  { title: 'Analytics',       value: 'analytics'       },
+  { title: 'Admin',           value: 'admin'           },
 ]
 
 const SECTION_TYPE_OPTIONS = [
@@ -86,6 +87,8 @@ const SECTION_TYPE_OPTIONS = [
   { title: 'Billing — Usage',          value: 'billingUsage'        },
   { title: 'Billing — Plans Grid',     value: 'billingPlansGrid'    },
   { title: 'Billing — Footer',         value: 'billingFooter'       },
+  { title: 'Billing Success — Hero',    value: 'billingSuccessHero'    },
+  { title: 'Billing Success — Actions', value: 'billingSuccessActions' },
   // Settings — multi-section
   { title: 'Settings — Header',        value: 'settingsHeader'      },
   { title: 'Settings — Profile Info',  value: 'settingsInfo'        },
@@ -188,11 +191,13 @@ export const sectionType = defineType({
         analytics:          ActivityIcon,
         admin:              UsersIcon,
         // Billing sub-sections
-        billingHeader:      CreditCardIcon,
-        billingCurrentPlan: CreditCardIcon,
-        billingUsage:       CreditCardIcon,
-        billingPlansGrid:   CreditCardIcon,
-        billingFooter:      CreditCardIcon,
+        billingHeader:         CreditCardIcon,
+        billingCurrentPlan:    CreditCardIcon,
+        billingUsage:          CreditCardIcon,
+        billingPlansGrid:      CreditCardIcon,
+        billingFooter:         CreditCardIcon,
+        billingSuccessHero:    CreditCardIcon,
+        billingSuccessActions: CreditCardIcon,
         // Settings sub-sections
         settingsHeader:     ControlsIcon,
         settingsInfo:       ControlsIcon,

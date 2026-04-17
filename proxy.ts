@@ -2,10 +2,12 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 // These paths are ALWAYS public regardless of Sanity config
+// NOTE: /login and /signup are intentionally absent — they go through updateSession
+// so that authenticated users get redirected away (handled in lib/supabase/middleware.ts)
 // NOTE: /studio is intentionally absent — it is auth-gated (see ALWAYS_AUTH below)
-const ALWAYS_PUBLIC = ['/api/', '/login', '/signup', '/auth/']
-// These match language-prefixed versions too
-const ALWAYS_PUBLIC_SLUGS = ['login', 'signup']
+const ALWAYS_PUBLIC = ['/api/', '/auth/']
+// Auth pages: pass through updateSession so logged-in users get redirected away
+const AUTH_PAGE_SLUGS = ['login', 'signup']
 // App pages that always require auth (fast-path, no Sanity fetch needed)
 // 'studio' is included so unauthenticated users are redirected to login
 const ALWAYS_AUTH = ['posts', 'analytics', 'settings', 'billing', 'admin', 'studio']
@@ -34,9 +36,9 @@ export async function proxy(request: NextRequest) {
   const { slug } = parsePath(pathname)
   const topSlug = slug.split('/')[0]
 
-  // Always public slugs (login, signup)
-  if (ALWAYS_PUBLIC_SLUGS.includes(topSlug)) {
-    return NextResponse.next()
+  // Auth pages: run updateSession so authenticated users are redirected away
+  if (AUTH_PAGE_SLUGS.includes(topSlug)) {
+    return await updateSession(request)
   }
 
   // Fast-path: app pages always require auth

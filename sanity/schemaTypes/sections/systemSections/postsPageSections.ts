@@ -98,6 +98,30 @@ export const postsPageSectionFields = [
       defineField({ name: 'deleteDialogBody',         title: 'Dialog: Body (use {title} for post name)', type: 'text',   initialValue: 'Are you sure you want to delete "{title}"? This will permanently remove it from Sanity. This cannot be undone.' }),
       defineField({ name: 'deleteDialogConfirmLabel', title: 'Dialog: Confirm Button',  type: 'string', initialValue: 'Delete Post' }),
       defineField({ name: 'deleteDialogCancelLabel',  title: 'Dialog: Cancel Button',   type: 'string', initialValue: 'Cancel' }),
+      // Featured banner — full configuration
+      defineField({ name: 'featuredLabel',     title: 'Featured Banner: Badge Label',       type: 'string', initialValue: 'Featured Post' }),
+      defineField({ name: 'featuredOfLabel',   title: 'Featured Banner: Counter "of" word', type: 'string', initialValue: 'of', description: 'The word between numbers in "1 of 5".' }),
+      defineField({ name: 'featuredReadLabel', title: 'Featured Banner: Read Button Label', type: 'string', initialValue: 'Read now' }),
+      defineField({
+        name: 'featuredBannerIcon',
+        title: 'Featured Banner: Icon',
+        description: 'Icon shown in the banner badge. Defaults to Star.',
+        type: 'string',
+        options: {
+          list: [
+            { title: 'Star',     value: 'Star'     },
+            { title: 'Bookmark', value: 'Bookmark' },
+            { title: 'Sparkles', value: 'Sparkles' },
+            { title: 'Zap',      value: 'Zap'      },
+            { title: 'Flame',    value: 'Flame'    },
+            { title: 'Trophy',   value: 'Trophy'   },
+            { title: 'Award',    value: 'Award'    },
+            { title: 'Crown',    value: 'Crown'    },
+          ],
+          layout: 'radio',
+        },
+        initialValue: 'Star',
+      }),
     ],
   }),
 

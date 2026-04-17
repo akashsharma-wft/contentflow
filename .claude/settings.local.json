@@ -41,7 +41,9 @@
       "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" && npx tsc --noEmit > tsc_out.txt 2>&1 && echo PASS || echo FAIL\")",
       "Bash(cmd /c \"type \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\tsc_out.txt\\\\\"\")",
       "Bash(cmd /c \"npx --prefix \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\\" tsc -p \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\tsconfig.json\\\\\" --noEmit 2>&1\")",
-      "Bash(cmd /c \"findstr /s /i \\\\\"unstable_noAuthBoundary\\\\\" \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\node_modules\\\\next-sanity\\\\dist\\\\*.d.ts\\\\\" 2>&1 | head -20\")"
+      "Bash(cmd /c \"findstr /s /i \\\\\"unstable_noAuthBoundary\\\\\" \\\\\"c:\\\\Users\\\\Akash Sharma\\\\Desktop\\\\Coding\\\\Development\\\\Web Development\\\\Projects\\\\internship\\\\contentflow\\\\node_modules\\\\next-sanity\\\\dist\\\\*.d.ts\\\\\" 2>&1 | head -20\")",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ]
   }
 }

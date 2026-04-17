@@ -20,6 +20,7 @@ import {
   POST_DETAIL_SECTIONS_QUERY,
   SITE_CONFIG_QUERY,
   NAV_PAGES_QUERY,
+  IS_POST_DRAFT_QUERY,
 } from '@/lib/sanity/queries'
 import {
   SUPPORTED_LANGUAGES,
@@ -197,7 +198,14 @@ export default async function LocalizedPage({ params }: Props) {
 
   // 2. Try post — use DashboardLayout + PostDetail
   const post = await client.fetch<SanityPost | null>(POST_BY_SLUG_AND_LANG_QUERY, { slug, lang })
-  if (!post) notFound()
+
+  if (!post) {
+    // Distinguish "post not found" from "post is a draft" — show a helpful
+    // toast on the posts page rather than a hard 404 for draft posts.
+    const isDraft = await client.fetch<boolean>(IS_POST_DRAFT_QUERY, { slug, lang })
+    if (isDraft) redirect(`/${lang}/posts?draft=1`)
+    notFound()
+  }
 
   // Fetch adjacent posts for prev/next navigation
   const [variants, adjacentRaw, sectionDocs] = await Promise.all([

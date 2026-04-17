@@ -43,6 +43,7 @@ import {
   NAV_PAGES_QUERY,
   POST_LANG_VARIANTS_QUERY,
   POST_DETAIL_SECTIONS_QUERY,
+  IS_POST_DRAFT_QUERY,
 } from '@/lib/sanity/queries'
 import {
   isSupportedLang,
@@ -226,78 +227,82 @@ async function EnglishSlugPage({ slug }: { slug: string }) {
     { slug, lang: 'en' }
   )
 
-  if (post) {
-    const [variants, adjacentRaw, sectionDocs] = await Promise.all([
-      sanityClient.fetch<SlugEntry[]>(POST_LANG_VARIANTS_QUERY, { slug }, { next: { revalidate: 60 } }),
-      client.fetch<{ slug: string }[]>(
-        `*[_type == "post" && language == "en" && defined(publishedAt) && !(_id in path("drafts.**"))] | order(publishedAt desc) { "slug": slug.current }`
-      ),
-      client.fetch<SanityPageSection[]>(POST_DETAIL_SECTIONS_QUERY, { lang: 'en' }),
-    ])
-
-    const orderedSlugs = adjacentRaw.map((p) => p.slug)
-    const currentIndex = orderedSlugs.indexOf(slug)
-    const prevSlug = currentIndex < orderedSlugs.length - 1 ? orderedSlugs[currentIndex + 1] : null
-    const nextSlug = currentIndex > 0 ? orderedSlugs[currentIndex - 1] : null
-
-    const variantMap = Object.fromEntries(variants.map((v) => [v.language, v.slug]))
-    const { header, meta, body, tags, backLink } = assemblePostDetailConfig(sectionDocs ?? [])
-
-    const postData = {
-      _id:          post._id,
-      title:        post.title,
-      slug:         typeof post.slug === 'string' ? post.slug : (post.slug as { current: string }).current,
-      body:         (post.body ?? []) as unknown[],
-      tags:         post.tags ?? [],
-      featured:     post.featured ?? false,
-      publishedAt:  post.publishedAt ?? null,
-      coverImage:   (post.coverImage as unknown as string | null | undefined) ?? null,
-      authorId:     post.authorId,
-      authorName:   post.authorName,
-      authorEmail:  post.authorEmail,
-      authorAvatar: post.authorAvatar,
-    }
-
-    return (
-      <DashboardLayout lang="en">
-        {variants.length > 1 && (
-          <div className="flex items-center gap-2 mb-2 px-5 lg:px-8 pt-4">
-            {SUPPORTED_LANGUAGES.map((l) => {
-              const targetSlug = variantMap[l]
-              if (!targetSlug) return null
-              const url = l === 'en' ? `/${targetSlug}` : `/${l}/${targetSlug}`
-              return (
-                <a
-                  key={l}
-                  href={url}
-                  className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${
-                    l === 'en'
-                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-white/30 hover:text-white/60'
-                  }`}
-                >
-                  {LANG_LABELS[l as SupportedLang]?.toUpperCase() ?? l.toUpperCase()}
-                </a>
-              )
-            })}
-          </div>
-        )}
-        <PostDetail
-          post={postData}
-          prevSlug={prevSlug}
-          nextSlug={nextSlug}
-          lang="en"
-          headerContent={header}
-          metaContent={meta}
-          bodyContent={body}
-          tagsContent={tags}
-          backLinkContent={{ ...backLink, backHref: backLink.backHref ?? '/posts' }}
-        />
-      </DashboardLayout>
-    )
+  if (!post) {
+    // Safety net for direct URL access to a draft post's slug.
+    // The primary UX path (clicking in PostsTable) is handled client-side.
+    const isDraft = await client.fetch<boolean>(IS_POST_DRAFT_QUERY, { slug, lang: 'en' })
+    if (isDraft) redirect('/posts?draft=1')
+    notFound()
   }
 
-  notFound()
+  const [variants, adjacentRaw, sectionDocs] = await Promise.all([
+    sanityClient.fetch<SlugEntry[]>(POST_LANG_VARIANTS_QUERY, { slug }, { next: { revalidate: 60 } }),
+    client.fetch<{ slug: string }[]>(
+      `*[_type == "post" && language == "en" && defined(publishedAt) && !(_id in path("drafts.**"))] | order(publishedAt desc) { "slug": slug.current }`
+    ),
+    client.fetch<SanityPageSection[]>(POST_DETAIL_SECTIONS_QUERY, { lang: 'en' }),
+  ])
+
+  const orderedSlugs = adjacentRaw.map((p) => p.slug)
+  const currentIndex = orderedSlugs.indexOf(slug)
+  const prevSlug = currentIndex < orderedSlugs.length - 1 ? orderedSlugs[currentIndex + 1] : null
+  const nextSlug = currentIndex > 0 ? orderedSlugs[currentIndex - 1] : null
+
+  const variantMap = Object.fromEntries(variants.map((v) => [v.language, v.slug]))
+  const { header, meta, body, tags, backLink } = assemblePostDetailConfig(sectionDocs ?? [])
+
+  const postData = {
+    _id:          post._id,
+    title:        post.title,
+    slug:         typeof post.slug === 'string' ? post.slug : (post.slug as { current: string }).current,
+    body:         (post.body ?? []) as unknown[],
+    tags:         post.tags ?? [],
+    featured:     post.featured ?? false,
+    publishedAt:  post.publishedAt ?? null,
+    coverImage:   (post.coverImage as unknown as string | null | undefined) ?? null,
+    authorId:     post.authorId,
+    authorName:   post.authorName,
+    authorEmail:  post.authorEmail,
+    authorAvatar: post.authorAvatar,
+  }
+
+  return (
+    <DashboardLayout lang="en">
+      {variants.length > 1 && (
+        <div className="flex items-center gap-2 mb-2 px-5 lg:px-8 pt-4">
+          {SUPPORTED_LANGUAGES.map((l) => {
+            const targetSlug = variantMap[l]
+            if (!targetSlug) return null
+            const url = l === 'en' ? `/${targetSlug}` : `/${l}/${targetSlug}`
+            return (
+              <a
+                key={l}
+                href={url}
+                className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${
+                  l === 'en'
+                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                    : 'text-white/30 hover:text-white/60'
+                }`}
+              >
+                {LANG_LABELS[l as SupportedLang]?.toUpperCase() ?? l.toUpperCase()}
+              </a>
+            )
+          })}
+        </div>
+      )}
+      <PostDetail
+        post={postData}
+        prevSlug={prevSlug}
+        nextSlug={nextSlug}
+        lang="en"
+        headerContent={header}
+        metaContent={meta}
+        bodyContent={body}
+        tagsContent={tags}
+        backLinkContent={{ ...backLink, backHref: backLink.backHref ?? '/posts' }}
+      />
+    </DashboardLayout>
+  )
 }
 
 // ── Render page — shared by all page types ─────────────────────────────────────

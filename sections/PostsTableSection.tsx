@@ -110,7 +110,13 @@ export function PostsTableSection({ content, lang = 'en' }: Props) {
       {/* Featured banner — mb-4 provides consistent gap before the table */}
       {featuredPosts.length > 0 && (
         <div className="mb-4">
-          <FeaturedBanner posts={featuredPosts} />
+          <FeaturedBanner
+            posts={featuredPosts}
+            featuredLabel={content.featuredLabel}
+            featuredOfLabel={content.featuredOfLabel}
+            featuredReadLabel={content.featuredReadLabel}
+            bannerIcon={content.featuredBannerIcon}
+          />
         </div>
       )}
 

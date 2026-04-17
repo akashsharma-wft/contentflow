@@ -85,6 +85,8 @@ import { BillingCurrentPlanSection } from './BillingCurrentPlanSection'
 import { BillingUsageSection }       from './BillingUsageSection'
 import { BillingPlansGridSection }   from './BillingPlansGridSection'
 import { BillingFooterSection }      from './BillingFooterSection'
+import { BillingSuccessHeroSection }    from './BillingSuccessHeroSection'
+import { BillingSuccessActionsSection } from './BillingSuccessActionsSection'
 // Settings sub-sections
 import { SettingsHeaderSection }     from './SettingsHeaderSection'
 import { SettingsInfoSection }       from './SettingsInfoSection'
@@ -154,6 +156,8 @@ export async function SectionRenderer({ sections, lang = 'en' }: SectionRenderer
             case 'billingUsage':       return <BillingUsageSection       key={key} content={s.billingUsage ?? {}} />
             case 'billingPlansGrid':   return <BillingPlansGridSection   key={key} content={s.billingPlansGrid ?? {}} />
             case 'billingFooter':      return <BillingFooterSection      key={key} content={s.billingFooter ?? {}} />
+            case 'billingSuccessHero':    return <BillingSuccessHeroSection    key={key} content={s.billingSuccessHero ?? {}} />
+            case 'billingSuccessActions': return <BillingSuccessActionsSection key={key} content={s.billingSuccessActions ?? {}} />
             // Settings sub-sections
             case 'settingsHeader':     return <SettingsHeaderSection     key={key} content={s.settingsHeader ?? {}} />
             case 'settingsInfo':       return <SettingsInfoSection       key={key} content={s.settingsInfo ?? {}} />

@@ -95,6 +95,8 @@ const SECTIONS_PROJECTION = groq`
       upgradeLabel, downgradeLabel, downgradeScheduledLabel, currentPlanButtonLabel
     },
     billingFooter { stripeNote, webhookNote },
+    billingSuccessHero { icon, heading, subheading, body },
+    billingSuccessActions { primaryLabel, primaryHref, secondaryLabel, secondaryHref },
     // Settings sub-sections
     settingsHeader { heading, subheading },
     settingsInfo { uploadPhotoLabel },
@@ -116,7 +118,8 @@ const SECTIONS_PROJECTION = groq`
       emptyTitle, emptyBody, emptyCtaLabel,
       showingLabel, loadMoreLabel, connectedLabel,
       viewPostLabel, editPostLabel, deletePostLabel,
-      deleteDialogTitle, deleteDialogBody, deleteDialogConfirmLabel, deleteDialogCancelLabel
+      deleteDialogTitle, deleteDialogBody, deleteDialogConfirmLabel, deleteDialogCancelLabel,
+      featuredLabel, featuredOfLabel, featuredReadLabel, featuredBannerIcon
     },
     admin {
       heading, subheading,
@@ -649,4 +652,24 @@ export const ADMIN_PAGE_CONFIG_QUERY = groq`
     heading, subheading, totalUsersLabel,
     colUser, colPlan, colRole, colJoined, footerNote, emptyLabel
   }
+`
+
+// ─── Draft post check ──────────────────────────────────────────────────────────
+
+/**
+ * Returns true if the post exists but has no publishedAt (i.e. it is a draft).
+ * Used to distinguish "post not found" from "post is a draft" so we can show
+ * a helpful toast instead of a 404.
+ * Params: { slug: string, lang: string }
+ */
+export const IS_POST_DRAFT_QUERY = groq`
+  defined(
+    *[
+      _type == "post"
+      && slug.current == $slug
+      && language == $lang
+      && !defined(publishedAt)
+      && !(_id in path("drafts.**"))
+    ][0]._id
+  )
 `

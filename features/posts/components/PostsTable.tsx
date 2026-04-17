@@ -259,13 +259,22 @@ export function PostsTable({
                 )}
               </div>
 
-              {/* Title */}
-              <Link
-                href={postHref}
-                className="text-white/80 text-sm font-medium hover:text-white transition-colors truncate"
-              >
-                {post.title}
-              </Link>
+              {/* Title — drafts show a toast instead of navigating to post detail */}
+              {post.status === 'draft' ? (
+                <button
+                  onClick={() => toast.info('This post is a draft — publish it in Sanity Studio to view it here.', { duration: 5000 })}
+                  className="text-white/45 text-sm font-medium truncate text-left cursor-pointer hover:text-white/65 transition-colors"
+                >
+                  {post.title}
+                </button>
+              ) : (
+                <Link
+                  href={postHref}
+                  className="text-white/80 text-sm font-medium hover:text-white transition-colors truncate"
+                >
+                  {post.title}
+                </Link>
+              )}
 
               {/* Status badge */}
               <span className={cn(
@@ -309,14 +318,23 @@ export function PostsTable({
                   className="bg-[#1a1d27] border border-white/10 text-white/70 min-w-[140px]"
                 >
                   {post.slug && (
-                    <DropdownMenuItem asChild>
-                      <Link
-                        href={postHref}
-                        className="flex items-center gap-2 cursor-pointer hover:text-white text-sm px-3 py-2"
+                    post.status === 'draft' ? (
+                      <DropdownMenuItem
+                        onClick={() => toast.info('This post is a draft — publish it in Sanity Studio to view it here.', { duration: 5000 })}
+                        className="flex items-center gap-2 cursor-pointer text-sm px-3 py-2 text-white/40"
                       >
                         <Eye size={13} /> {viewPostLabel}
-                      </Link>
-                    </DropdownMenuItem>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={postHref}
+                          className="flex items-center gap-2 cursor-pointer hover:text-white text-sm px-3 py-2"
+                        >
+                          <Eye size={13} /> {viewPostLabel}
+                        </Link>
+                      </DropdownMenuItem>
+                    )
                   )}
                   {post.authorId === user?.id && (
                     <DropdownMenuItem

@@ -2,8 +2,20 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Routes that redirect to home if the user is already logged in
-const AUTH_ROUTES = ['/login', '/signup']
+// Slugs that logged-in users should be redirected away from (login / signup),
+// regardless of language prefix — matches /login, /signup, /hi/login, /kn/signup, etc.
+const AUTH_PAGE_SLUGS = new Set(['login', 'signup'])
+const SUPPORTED_LANGS = new Set(['en', 'hi', 'kn'])
+
+/** Returns true when the pathname is a login or signup page in any language. */
+function isAuthPagePath(pathname: string): boolean {
+  const parts = pathname.split('/').filter(Boolean)
+  // /login or /signup
+  if (parts.length === 1) return AUTH_PAGE_SLUGS.has(parts[0])
+  // /hi/login, /kn/signup, /en/login, etc.
+  if (parts.length === 2 && SUPPORTED_LANGS.has(parts[0])) return AUTH_PAGE_SLUGS.has(parts[1])
+  return false
+}
 
 // Routes that require a logged-in session (fast-path check before Sanity loads)
 // /studio is included — unauthenticated users get redirected to login;
@@ -38,8 +50,8 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Logged-in user visiting login or signup → send them home
-  if (user && AUTH_ROUTES.some(route => pathname.startsWith(route))) {
+  // Logged-in user visiting any login/signup page (any language) → redirect home
+  if (user && isAuthPagePath(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)

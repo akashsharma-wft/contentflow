@@ -6,12 +6,14 @@
 //   Sanity siteConfig.sidebarConfig.navItems  → Sidebar + MobileBottomNav
 //   Falls back to siteConfig.sidebarNav (legacy) → same components
 //   No Sanity data → hardcoded fallback inside SidebarNav / MobileBottomNav
+import { Suspense } from 'react'
 import { sanityClient } from '@/lib/sanity/client'
 import { SITE_CONFIG_QUERY } from '@/lib/sanity/queries'
 import type { SanitySiteConfig } from '@/types/sanity'
 import { Sidebar } from './Sidebar'
 import { MobileTopBar } from './MobileTopBar'
 import { MobileBottomNav } from './MobileBottomNav'
+import { DraftPostToast } from '@/features/posts/components/DraftPostToast'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -34,6 +36,11 @@ export async function DashboardLayout({ children, lang = 'en' }: DashboardLayout
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile top bar — logo + avatar */}
         <MobileTopBar />
+
+        {/* Draft post toast — fires when ?draft=1 is present in the URL */}
+        <Suspense>
+          <DraftPostToast />
+        </Suspense>
 
         <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
           <div className="w-full max-w-5xl mx-auto py-6 px-4 lg:px-8">

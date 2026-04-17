@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import type { HeroSection as HeroSectionType } from '@/types/sanity'
+import { HeroPrimaryCta } from './_HeroPrimaryCta'
 
 interface Props {
   section: HeroSectionType
@@ -41,9 +42,11 @@ export function HeroSection({ section }: Props) {
         {(primaryCta?.label || secondaryCta?.label) && (
           <div className="flex items-center justify-center gap-4 flex-wrap pt-2">
             {primaryCta?.label && primaryCta?.href && (
-              <Link href={primaryCta.href} className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-xl transition-colors text-sm">
-                {primaryCta.label}
-              </Link>
+              <HeroPrimaryCta
+                label={primaryCta.label}
+                href={primaryCta.href}
+                className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-xl transition-colors text-sm"
+              />
             )}
             {secondaryCta?.label && secondaryCta?.href && (
               <Link
@@ -99,12 +102,11 @@ function SplitHero({ section }: Props) {
           {(primaryCta?.label || secondaryCta?.label) && (
             <div className="flex items-center gap-3 flex-wrap">
               {primaryCta?.label && primaryCta?.href && (
-                <Link
+                <HeroPrimaryCta
+                  label={primaryCta.label}
                   href={primaryCta.href}
                   className="px-5 py-2.5 bg-white text-[#0d0e14] hover:bg-white/90 font-semibold rounded-xl transition-colors text-sm"
-                >
-                  {primaryCta.label}
-                </Link>
+                />
               )}
               {secondaryCta?.label && secondaryCta?.href && (
                 <Link

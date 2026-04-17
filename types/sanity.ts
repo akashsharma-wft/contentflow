@@ -920,6 +920,20 @@ export type SectionBillingFooterContent = {
   webhookNote?: string
 }
 
+export type SectionBillingSuccessHeroContent = {
+  icon?:       string
+  heading?:    string
+  subheading?: string
+  body?:       string
+}
+
+export type SectionBillingSuccessActionsContent = {
+  primaryLabel?:   string
+  primaryHref?:    string
+  secondaryLabel?: string
+  secondaryHref?:  string
+}
+
 // ── Settings sub-section content types ────────────────────────────────────────
 
 export type SectionSettingsHeaderContent = {
@@ -998,6 +1012,11 @@ export type SectionPostsTableContent = {
   deleteDialogBody?:        string
   deleteDialogConfirmLabel?: string
   deleteDialogCancelLabel?:  string
+  // Featured banner — full configuration
+  featuredLabel?:      string
+  featuredOfLabel?:    string
+  featuredReadLabel?:  string
+  featuredBannerIcon?: string
 }
 
 /** Rich content model for the /admin page section. */
@@ -1096,6 +1115,8 @@ export type SanityPageSection = {
   billingUsage?:       SectionBillingUsageContent | null
   billingPlansGrid?:   SectionBillingPlansGridContent | null
   billingFooter?:      SectionBillingFooterContent | null
+  billingSuccessHero?:    SectionBillingSuccessHeroContent | null
+  billingSuccessActions?: SectionBillingSuccessActionsContent | null
   // Settings sub-sections
   settingsHeader?:     SectionSettingsHeaderContent | null
   settingsInfo?:       SectionSettingsInfoContent | null

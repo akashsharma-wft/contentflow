@@ -127,4 +127,53 @@ export const billingPageSectionFields = [
     ],
   }),
 
+  // ── Billing Success Hero ──────────────────────────────────────────────────────
+  defineField({
+    name: 'billingSuccessHero',
+    title: 'Billing Success — Hero',
+    description: 'Icon, heading, subheading, and body shown at the top of /billing-success.',
+    type: 'object',
+    ...shownFor('billingSuccessHero'),
+    fields: [
+      defineField({
+        name: 'icon',
+        title: 'Icon',
+        description: 'Lucide icon name to display in the success badge.',
+        type: 'string',
+        options: {
+          list: [
+            { title: 'Check Circle',   value: 'CheckCircle'   },
+            { title: 'Sparkles',       value: 'Sparkles'       },
+            { title: 'Trophy',         value: 'Trophy'         },
+            { title: 'Crown',          value: 'Crown'          },
+            { title: 'Star',           value: 'Star'           },
+            { title: 'Zap',            value: 'Zap'            },
+            { title: 'Award',          value: 'Award'          },
+            { title: 'Flame',          value: 'Flame'          },
+          ],
+          layout: 'radio',
+        },
+        initialValue: 'CheckCircle',
+      }),
+      defineField({ name: 'heading',    title: 'Heading',    type: 'string', initialValue: 'Subscription Activated!' }),
+      defineField({ name: 'subheading', title: 'Subheading', type: 'string', initialValue: 'Your Pro plan is now active.' }),
+      defineField({ name: 'body',       title: 'Body',       type: 'string', initialValue: 'Thank you for upgrading. Unlimited posts, priority support, and all Pro features are now unlocked for your workspace.' }),
+    ],
+  }),
+
+  // ── Billing Success Actions ───────────────────────────────────────────────────
+  defineField({
+    name: 'billingSuccessActions',
+    title: 'Billing Success — Actions',
+    description: 'Primary and secondary CTA buttons shown below the hero on /billing-success.',
+    type: 'object',
+    ...shownFor('billingSuccessActions'),
+    fields: [
+      defineField({ name: 'primaryLabel',    title: 'Primary Button Label', type: 'string', initialValue: 'Go to Posts' }),
+      defineField({ name: 'primaryHref',     title: 'Primary Button Href',  type: 'string', initialValue: '/posts' }),
+      defineField({ name: 'secondaryLabel',  title: 'Secondary Button Label', type: 'string', initialValue: 'Manage Subscription' }),
+      defineField({ name: 'secondaryHref',   title: 'Secondary Button Href',  type: 'string', initialValue: '/billing' }),
+    ],
+  }),
+
 ]
